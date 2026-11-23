@@ -154,7 +154,7 @@ export const CandidateRegistrationModal: React.FC<CandidateRegistrationModalProp
         College_ID_Number: formData.College_ID_Number.trim(),
         Photograph_URL: formData.Photograph_URL,
         Resume_URL: formData.Resume_URL,
-        Registration_Status: 'PENDING_APPROVAL',
+        Registration_Status: 'APPROVED',
         Profile_Status: 'PROFILE_COMPLETED'
       });
 

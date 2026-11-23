@@ -61,7 +61,8 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'tg_db_14_audit_logs_v5',
   ACTIVE_SESSION: 'tg_active_session_v5',
   CONSENTS: 'tg_consents_v5',
-  GAS_CONFIG: 'tg_gas_config_v5'
+  GAS_CONFIG: 'tg_gas_config_v5',
+  ASSESSMENT_LIVE_STATE: 'tg_assessment_live_state_v5'
 };
 
 // Automatic cleanup of legacy cached seed data
@@ -248,31 +249,20 @@ export const ApiService = {
 
       return { success: true, session };
     } else {
-      // Candidate Login
+      // Candidate Login (Lookup candidates created by Administrator)
       const candidates = this.getCandidates();
       let matched = candidates.find(c => 
         (c.Primary_Email && c.Primary_Email.toLowerCase() === cleanEmail) || 
         (c.Email && c.Email.toLowerCase() === cleanEmail) ||
-        (c.Candidate_ID && c.Candidate_ID.toLowerCase() === cleanEmail)
+        (c.Candidate_ID && c.Candidate_ID.toLowerCase() === cleanEmail) ||
+        (c.College_ID_Number && c.College_ID_Number.toLowerCase() === cleanEmail)
       );
 
       if (!matched) {
-        // Auto-provision candidate draft profile
-        matched = this.createCandidate({
-          Full_Name: cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          Primary_Email: cleanEmail,
-          Email: cleanEmail,
-          College_Name: 'Campus Engineering College',
-          Department: 'Computer Science',
-          Degree: 'B.Tech',
-          Academic_Year: '4th Year',
-          Current_Semester: 'Semester 7',
-          College_ID_Number: `COL-${Math.floor(Math.random() * 89999 + 10000)}`,
-          Mobile_Number: '',
-          WhatsApp_Number: '',
-          Date_of_Birth: '2004-01-01',
-          Registration_Status: 'PENDING_APPROVAL'
-        });
+        return {
+          success: false,
+          message: 'Candidate record not found. Please ensure your administrator (poojasri@trustgrid.ai) has registered your candidate profile.'
+        };
       }
 
       const candidateUser: User = {
@@ -342,8 +332,10 @@ export const ApiService = {
       Current_Semester: data.Current_Semester || 'Semester 7',
       College_ID_Number: data.College_ID_Number?.trim() || `ID-${Math.floor(Math.random() * 89999 + 10000)}`,
       Photograph_URL: data.Photograph_URL || '',
-      Registration_Status: data.Registration_Status || 'PENDING_APPROVAL',
-      Profile_Status: data.Profile_Status || 'INCOMPLETE',
+      Registration_Status: data.Registration_Status || 'APPROVED',
+      Profile_Status: data.Profile_Status || 'PROFILE_COMPLETED',
+      Approval_Date: data.Approval_Date || now,
+      Approved_By: data.Approved_By || 'ADM_001',
       Qualification: data.Qualification || `${data.Degree || 'B.Tech'} in ${data.Department || 'CSE'}`,
       University: data.University || data.College_Name || 'Campus University',
       Graduation_Year: data.Graduation_Year || '2026',
@@ -352,7 +344,7 @@ export const ApiService = {
       Current_Designation: data.Current_Designation || 'Engineering Student',
       Skills: data.Skills || 'Problem Solving, Analytical Thinking, Algorithms',
       Resume_URL: data.Resume_URL || '',
-      Verification_Status: data.Registration_Status === 'APPROVED' ? 'VERIFIED' : 'PENDING',
+      Verification_Status: 'VERIFIED',
       Consent_Status: 'GRANTED',
       Record_Status: 'ACTIVE',
       Created_At: now,
@@ -581,6 +573,73 @@ export const ApiService = {
   // ==========================================
   getAssessmentMaster(): AssessmentMaster[] {
     return loadStorage<AssessmentMaster[]>(STORAGE_KEYS.ASSESSMENTS, INITIAL_ASSESSMENT_MASTER);
+  },
+
+  // ==========================================
+  // CAMPUS ASSESSMENT LIVE CONTROLLER (ADMIN MASTER SWITCH)
+  // ==========================================
+  getAssessmentLiveState(): Record<string, boolean> {
+    return loadStorage<Record<string, boolean>>(STORAGE_KEYS.ASSESSMENT_LIVE_STATE, {
+      'ASM_APTITUDE': true,
+      'ASM_COMPREHENSION': true,
+      'ASM_EI_SITUATIONAL': true
+    });
+  },
+
+  setAssessmentLiveState(assessmentId: string, isLive: boolean): Record<string, boolean> {
+    const state = this.getAssessmentLiveState();
+    state[assessmentId] = isLive;
+    saveStorage(STORAGE_KEYS.ASSESSMENT_LIVE_STATE, state);
+
+    // Synchronize assessment master status
+    const masters = this.getAssessmentMaster();
+    const idx = masters.findIndex(m => m.Assessment_ID === assessmentId);
+    if (idx !== -1) {
+      masters[idx].Assessment_Status = isLive ? 'ACTIVE' : 'ARCHIVED';
+      saveStorage(STORAGE_KEYS.ASSESSMENTS, masters);
+    }
+
+    this.syncToGas('updateAssessmentLiveState', { assessmentId, isLive, state });
+    this.logAudit(
+      'ADM_001',
+      'ADMIN',
+      isLive ? 'START_CAMPUS_ASSESSMENT' : 'STOP_CAMPUS_ASSESSMENT',
+      'ASSESSMENT',
+      assessmentId,
+      `Assessment ${assessmentId} ${isLive ? 'STARTED & ENABLED FOR ALL CANDIDATES' : 'PAUSED/STOPPED'}`
+    );
+    return state;
+  },
+
+  setAllAssessmentsLive(isLive: boolean): Record<string, boolean> {
+    const state = {
+      'ASM_APTITUDE': isLive,
+      'ASM_COMPREHENSION': isLive,
+      'ASM_EI_SITUATIONAL': isLive
+    };
+    saveStorage(STORAGE_KEYS.ASSESSMENT_LIVE_STATE, state);
+
+    const masters = this.getAssessmentMaster();
+    masters.forEach(m => {
+      m.Assessment_Status = isLive ? 'ACTIVE' : 'ARCHIVED';
+    });
+    saveStorage(STORAGE_KEYS.ASSESSMENTS, masters);
+
+    this.syncToGas('updateAllAssessmentsLive', { isLive, state });
+    this.logAudit(
+      'ADM_001',
+      'ADMIN',
+      isLive ? 'START_ALL_ASSESSMENTS' : 'STOP_ALL_ASSESSMENTS',
+      'ASSESSMENT',
+      'ALL_ASSESSMENTS',
+      `All 3 assessments ${isLive ? 'STARTED & ENABLED FOR ALL CANDIDATES' : 'PAUSED/STOPPED'}`
+    );
+    return state;
+  },
+
+  isAssessmentLive(assessmentId: string): boolean {
+    const state = this.getAssessmentLiveState();
+    return state[assessmentId] === true;
   },
 
   getQuestionBank(assessmentId?: string): QuestionBankItem[] {
@@ -903,12 +962,17 @@ export const ApiService = {
    * Server-authoritative start attempt
    */
   startAssessmentAttempt(candidateId: string, assessmentId: string, durationMinutes: number = 30): AssessmentAttempt {
+    // 1. Verify administrator has enabled/started this assessment
+    if (!this.isAssessmentLive(assessmentId)) {
+      throw new Error('This assessment has not been started by the administrator yet. Access is unlocked once enabled by admin.');
+    }
+
     const attempts = this.getAttempts();
     const existing = attempts.find(a => a.Candidate_ID === candidateId && a.Assessment_ID === assessmentId);
 
     // Enforce One-Attempt Rule unless retake authorized
     const assignments = this.getAssignmentsForCandidate(candidateId);
-    const assign = assignments.find(a => a.Assessment_ID === assessmentId);
+    let assign = assignments.find(a => a.Assessment_ID === assessmentId);
 
     if (existing && existing.Attempt_Status === 'COMPLETED' && !assign?.Retake_Approved) {
       throw new Error('This assessment has already been completed. Retakes require administrator authorization.');
@@ -917,6 +981,24 @@ export const ApiService = {
     if (existing && existing.Attempt_Status === 'IN_PROGRESS') {
       // Return existing attempt to preserve countdown deadline across refreshes
       return existing;
+    }
+
+    // Auto-provision assignment if not yet created so candidate is never blocked
+    if (!assign) {
+      assign = {
+        Assignment_ID: `ASN_${Date.now()}_${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+        Candidate_ID: candidateId,
+        Assessment_ID: assessmentId,
+        Scheduled_Date: new Date().toISOString().split('T')[0],
+        Scheduled_Start_Time: '10:00',
+        Duration_Minutes: durationMinutes,
+        Assignment_Status: 'IN_PROGRESS',
+        Approved_By: 'ADM_001',
+        Attempt_Allowed: 1,
+        Retake_Approved: false
+      };
+      assignments.push(assign);
+      saveStorage(STORAGE_KEYS.ASSIGNMENTS, assignments);
     }
 
     const now = new Date();

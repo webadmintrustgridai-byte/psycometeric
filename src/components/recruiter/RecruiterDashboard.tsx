@@ -72,6 +72,21 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
   const [retakeAssessmentId, setRetakeAssessmentId] = useState('ASM_APTITUDE');
   const [retakeReason, setRetakeReason] = useState('Supervised campus network reconnection authorized by coordinator.');
 
+  // Live Assessment Controller State
+  const [liveStates, setLiveStates] = useState<Record<string, boolean>>(() => ApiService.getAssessmentLiveState());
+
+  const handleToggleAssessmentLive = (asmId: string) => {
+    const isCurrentlyLive = liveStates[asmId] === true;
+    const nextState = !isCurrentlyLive;
+    const updated = ApiService.setAssessmentLiveState(asmId, nextState);
+    setLiveStates({ ...updated });
+  };
+
+  const handleToggleAllAssessments = (enable: boolean) => {
+    const updated = ApiService.setAllAssessmentsLive(enable);
+    setLiveStates({ ...updated });
+  };
+
   // ==========================================
   // 10 METRIC ANALYTICS (PART 13 REQUIREMENT)
   // ==========================================
@@ -201,7 +216,7 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      
+
       {/* 10 DASHBOARD STATISTIC CARDS (PART 13 REQUIREMENT) */}
       <div>
         <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3">Campus Assessment Telemetry</h2>
@@ -268,9 +283,108 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
         </div>
       </div>
 
+      {/* CAMPUS ASSESSMENT LIVE CONTROLLER (ADMIN MASTER ACTIVATION) */}
+      <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 shadow-xl border border-blue-900/40 space-y-5">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+              <PlayCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-extrabold text-white">Campus Assessment Live Controller</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Admin Master Switch
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Start or stop assessments here. Once started, all candidates can immediately access and attend the assessment without individual approvals.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => handleToggleAllAssessments(true)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-1.5 border border-emerald-400/40"
+            >
+              <PlayCircle className="w-3.5 h-3.5" />
+              <span>Start All 3 Assessments for Everyone</span>
+            </button>
+
+            <button
+              onClick={() => handleToggleAllAssessments(false)}
+              className="px-3.5 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold rounded-xl transition-all border border-white/10 flex items-center gap-1.5"
+            >
+              <span>Stop / Close All</span>
+            </button>
+          </div>
+        </div>
+
+        {/* The 3 Assessment Control Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {assessmentMaster.map(asm => {
+            const isLive = liveStates[asm.Assessment_ID] === true;
+            return (
+              <div
+                key={asm.Assessment_ID}
+                className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
+                  isLive
+                    ? 'bg-emerald-950/40 border-emerald-500/50 shadow-inner'
+                    : 'bg-white/5 border-white/10'
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 ${
+                      isLive
+                        ? 'bg-emerald-500 text-emerald-950 font-black'
+                        : 'bg-slate-800 text-slate-400 border border-slate-700'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-950 animate-ping' : 'bg-slate-500'}`} />
+                      <span>{isLive ? 'LIVE • OPEN TO ALL' : 'STOPPED / CLOSED'}</span>
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      {asm.Duration_Minutes} Mins • 30 Qs
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-sm text-white leading-snug">
+                    {asm.Assessment_Name}
+                  </h3>
+                  <p className="text-[11px] text-slate-300">
+                    {asm.Assessment_Type === 'APTITUDE'
+                      ? 'CAT-standard quantitative, logical & verbal reasoning'
+                      : asm.Assessment_Type === 'COMPREHENSION'
+                      ? '3 reading passages with 1500–3000 words & 10 questions each'
+                      : 'Emotional intelligence & situational workplace judgment'}
+                  </p>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400">
+                    {isLive ? 'Candidates can start now' : 'Candidates see: Waiting for Admin'}
+                  </span>
+                  <button
+                    onClick={() => handleToggleAssessmentLive(asm.Assessment_ID)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 ${
+                      isLive
+                        ? 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40'
+                        : 'bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-black'
+                    }`}
+                  >
+                    <span>{isLive ? 'Stop Assessment' : 'Start Assessment'}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* CANDIDATES TABLE & MANAGEMENT TOOLBAR */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
-        
+
         {/* Toolbar Header */}
         <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -412,13 +526,12 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
                       {/* Registration Status & Inline Approval */}
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${
-                            c.Registration_Status === 'APPROVED'
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                              : c.Registration_Status === 'REJECTED'
+                          <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${c.Registration_Status === 'APPROVED'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : c.Registration_Status === 'REJECTED'
                               ? 'bg-rose-50 text-rose-800 border border-rose-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
-                          }`}>
+                            }`}>
                             {c.Registration_Status.replace(/_/g, ' ')}
                           </span>
 
@@ -446,21 +559,18 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
                       {/* 3 Assessments Status / Score Badges */}
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
-                            apt ? 'bg-blue-50 text-blue-900 border border-blue-200' : 'bg-slate-100 text-slate-500'
-                          }`} title="Assessment 1: Aptitude">
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${apt ? 'bg-blue-50 text-blue-900 border border-blue-200' : 'bg-slate-100 text-slate-500'
+                            }`} title="Assessment 1: Aptitude">
                             Apt: {apt ? `${apt.Score}/30` : 'Pending'}
                           </span>
 
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
-                            cmp ? 'bg-indigo-50 text-indigo-900 border border-indigo-200' : 'bg-slate-100 text-slate-500'
-                          }`} title="Assessment 2: Comprehension">
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${cmp ? 'bg-indigo-50 text-indigo-900 border border-indigo-200' : 'bg-slate-100 text-slate-500'
+                            }`} title="Assessment 2: Comprehension">
                             Cmp: {cmp ? `${cmp.Score}/30` : 'Pending'}
                           </span>
 
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
-                            ei ? 'bg-purple-50 text-purple-900 border border-purple-200' : 'bg-slate-100 text-slate-500'
-                          }`} title="Assessment 3: Emotional Intelligence & SJT">
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${ei ? 'bg-purple-50 text-purple-900 border border-purple-200' : 'bg-slate-100 text-slate-500'
+                            }`} title="Assessment 3: Emotional Intelligence & SJT">
                             EI: {ei ? `${ei.Score}/30` : 'Pending'}
                           </span>
                         </div>

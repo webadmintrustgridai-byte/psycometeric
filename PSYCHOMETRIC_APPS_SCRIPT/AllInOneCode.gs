@@ -162,6 +162,11 @@ function handleRequest(e, method) {
         responseData = clearAllCandidateRecords(ss);
         break;
 
+      case 'updateAssessmentLiveState':
+      case 'updateAllAssessmentsLive':
+        responseData = updateAssessmentLiveStateRecord(ss, payload);
+        break;
+
       // --- CANDIDATE OPERATIONS (DEDUPLICATION-SAFE) ---
       case 'createCandidate':
       case 'saveCandidate':
@@ -500,10 +505,10 @@ function saveCandidateRecord(ss, candidate) {
     candidate.Current_Semester || 'Semester 7',
     candidate.College_ID_Number || '',
     candidate.Photograph_URL || '',
-    candidate.Registration_Status || 'PENDING_APPROVAL',
-    candidate.Profile_Status || 'INCOMPLETE',
-    candidate.Approval_Date || '',
-    candidate.Approved_By || ''
+    candidate.Registration_Status || 'APPROVED',
+    candidate.Profile_Status || 'PROFILE_COMPLETED',
+    candidate.Approval_Date || new Date().toISOString(),
+    candidate.Approved_By || 'ADM_001'
   ];
 
   if (targetRow !== -1) {
@@ -1071,4 +1076,33 @@ function clearAllCandidateRecords(ss) {
   }
 
   return { status: 'CANDIDATE_RECORDS_PURGED', details: cleared };
+}
+
+// ==========================================
+// ASSESSMENT LIVE STATE (ADMIN MASTER SWITCH)
+// ==========================================
+function updateAssessmentLiveStateRecord(ss, payload) {
+  if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(DB_TABS.ASSESSMENT_MASTER);
+  if (!sheet) return { status: 'ASSESSMENT_MASTER_TAB_NOT_FOUND' };
+
+  var data = sheet.getDataRange().getValues();
+
+  if (payload.assessmentId) {
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] == payload.assessmentId) {
+        sheet.getRange(i + 1, 8).setValue(payload.isLive ? 'ACTIVE' : 'ARCHIVED');
+        break;
+      }
+    }
+  } else if (payload.state) {
+    for (var i = 1; i < data.length; i++) {
+      var asmId = data[i][0];
+      if (payload.state[asmId] !== undefined) {
+        sheet.getRange(i + 1, 8).setValue(payload.state[asmId] ? 'ACTIVE' : 'ARCHIVED');
+      }
+    }
+  }
+
+  return { status: 'ASSESSMENT_LIVE_STATE_UPDATED', payload: payload };
 }

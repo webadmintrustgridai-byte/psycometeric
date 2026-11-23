@@ -60,7 +60,34 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
       if (found) return found;
     }
     const list = ApiService.getCandidates();
-    return list[0];
+    if (list.length > 0) return list[0];
+    return {
+      Candidate_ID: 'CAN_PREVIEW_001',
+      Organization_ID: 'ORG_000001',
+      Registration_Date: new Date().toISOString(),
+      Full_Name: 'Candidate Preview',
+      Primary_Email: 'preview@candidate.internal',
+      Secondary_Email: '',
+      Email: 'preview@candidate.internal',
+      Mobile_Number: '+91 98000 00000',
+      WhatsApp_Number: '+91 98000 00000',
+      Date_of_Birth: '2004-01-01',
+      Gender: 'MALE',
+      College_Name: 'Engineering Institute of Technology',
+      Department: 'Computer Science and Engineering',
+      Degree: 'B.Tech',
+      Academic_Year: '4th Year',
+      Current_Semester: 'Semester 7',
+      College_ID_Number: 'COL-PREVIEW-01',
+      Photograph_URL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+      Registration_Status: 'APPROVED',
+      Profile_Status: 'PROFILE_COMPLETED',
+      Verification_Status: 'VERIFIED',
+      Consent_Status: 'GRANTED',
+      Record_Status: 'ACTIVE',
+      Created_At: new Date().toISOString(),
+      Updated_At: new Date().toISOString()
+    };
   });
 
   const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ACADEMIC_PROFILE' | 'ACTIVITIES_DOCS' | 'VIDEO_PROFILE' | 'TEST_STATION' | 'RESULTS'>('DASHBOARD');
@@ -266,8 +293,8 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
   };
 
   const handleStartAssessmentClick = (asm: AssessmentMaster) => {
-    if (candidate.Registration_Status !== 'APPROVED') {
-      alert('Your candidate registration is currently Pending Approval. Assessment scheduling unlocks upon administrator approval.');
+    if (!ApiService.isAssessmentLive(asm.Assessment_ID)) {
+      alert('This assessment has not been started by the administrator yet. Access unlocks as soon as enabled by the administrator.');
       return;
     }
     setShowInstructionsModal(asm);
@@ -452,19 +479,6 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
       {activeTab === 'DASHBOARD' && (
         <div className="space-y-6">
           
-          {/* Registration Status Notice Banner */}
-          {candidate?.Registration_Status === 'PENDING_APPROVAL' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 flex items-start gap-3.5">
-              <Clock className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-xs font-bold text-amber-900">Registration Under Institutional Review</h3>
-                <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
-                  Your campus candidate registration is currently being verified by the placement coordinator. Once approved, the assessment station will activate for supervised lab administration.
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Section Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -479,12 +493,12 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
               const assign = assignments.find(a => a.Assessment_ID === asm.Assessment_ID);
               const attempt = attempts.find(a => a.Assessment_ID === asm.Assessment_ID && a.Attempt_Status === 'COMPLETED');
               const inProgress = attempts.find(a => a.Assessment_ID === asm.Assessment_ID && a.Attempt_Status === 'IN_PROGRESS');
+              const isLive = ApiService.isAssessmentLive(asm.Assessment_ID);
 
               // Determine Card Status Color
-              // Green: Completed | Orange: Pending / In Progress | Blue: Scheduled / Available | Grey: Locked
               let statusColor = 'border-slate-200 bg-white';
               let badgeColor = 'bg-slate-100 text-slate-600';
-              let statusText = 'Locked';
+              let statusText = 'Waiting for Admin';
               let isClickable = false;
 
               if (attempt) {
@@ -496,11 +510,16 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
                 badgeColor = 'bg-amber-100 text-amber-800 border border-amber-300';
                 statusText = 'In Progress';
                 isClickable = true;
-              } else if (candidate.Registration_Status === 'APPROVED') {
-                statusColor = 'border-blue-300 bg-blue-50/20';
-                badgeColor = 'bg-blue-100 text-blue-900 border border-blue-300';
-                statusText = assign?.Retake_Approved ? 'Retake Authorized' : 'Scheduled / Available';
+              } else if (isLive) {
+                statusColor = 'border-emerald-400 bg-emerald-50/25';
+                badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                statusText = assign?.Retake_Approved ? 'Retake Authorized' : 'Live & Open to Everyone';
                 isClickable = true;
+              } else {
+                statusColor = 'border-slate-200 bg-slate-50/60';
+                badgeColor = 'bg-slate-100 text-slate-500 border border-slate-200';
+                statusText = 'Not Started by Admin';
+                isClickable = false;
               }
 
               return (
@@ -564,22 +583,35 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
                         <FileText className="w-4 h-4" />
                         <span>View Results</span>
                       </button>
+                    ) : inProgress ? (
+                      <button
+                        onClick={() => handleStartAssessmentClick(asm)}
+                        className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <PlayCircle className="w-4 h-4" />
+                        <span>Resume Assessment</span>
+                      </button>
                     ) : isClickable ? (
                       <button
                         onClick={() => handleStartAssessmentClick(asm)}
-                        className="w-full py-2.5 px-4 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5"
                       >
                         <PlayCircle className="w-4 h-4" />
-                        <span>{inProgress ? 'Resume Assessment' : 'Start Assessment'}</span>
+                        <span>Start Assessment</span>
                       </button>
                     ) : (
-                      <button
-                        disabled
-                        className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed flex items-center justify-center gap-1.5"
-                      >
-                        <Lock className="w-4 h-4" />
-                        <span>Approval Required</span>
-                      </button>
+                      <div className="space-y-1">
+                        <button
+                          disabled
+                          className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed flex items-center justify-center gap-1.5"
+                        >
+                          <Lock className="w-4 h-4" />
+                          <span>Waiting for Admin to Start</span>
+                        </button>
+                        <p className="text-[10px] text-center text-slate-400">
+                          Assessment unlocks once started by admin
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
