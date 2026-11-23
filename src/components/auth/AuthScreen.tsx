@@ -3,7 +3,7 @@
  * AuthScreen.tsx - Unified Admin & Candidate Authentication (Sign In & Sign Up) with Google Sheets Sync
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthSession, Role } from '../../types';
 import { ApiService } from '../../services/apiService';
 import {
@@ -27,13 +27,20 @@ interface AuthScreenProps {
   onLoginSuccess: (session: AuthSession) => void;
 }
 
+const checkIsAdminPath = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const p = window.location.pathname.toLowerCase();
+  const h = window.location.hash.toLowerCase();
+  return p === '/admin' || p.startsWith('/admin/') || p.includes('/admin') || h.includes('admin');
+};
+
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
-  const [roleMode, setRoleMode] = useState<Role>('CANDIDATE');
+  const [roleMode, setRoleMode] = useState<Role>(() => checkIsAdminPath() ? 'ADMIN' : 'CANDIDATE');
   const [candidateMode, setCandidateMode] = useState<'SIGN_IN' | 'SIGN_UP'>('SIGN_IN');
 
-  // Admin state
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  // Admin state pre-populated with master administrator credentials
+  const [adminEmail, setAdminEmail] = useState('poojasri@trustgrid.ai');
+  const [adminPassword, setAdminPassword] = useState('Pooj@2004*');
 
   // Candidate Sign In state
   const [candEmail, setCandEmail] = useState('');
@@ -50,6 +57,41 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Sync roleMode when browser URL changes (e.g. user enters /admin or navigates back)
+  useEffect(() => {
+    const handleUrlChange = () => {
+      if (checkIsAdminPath()) {
+        setRoleMode('ADMIN');
+      } else {
+        setRoleMode('CANDIDATE');
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
+
+  const handleRoleSwitch = (newRole: Role) => {
+    setRoleMode(newRole);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    if (typeof window !== 'undefined') {
+      if (newRole === 'ADMIN') {
+        if (!window.location.pathname.includes('/admin')) {
+          window.history.pushState({ role: 'ADMIN' }, '', '/admin');
+        }
+      } else {
+        if (window.location.pathname.includes('/admin')) {
+          window.history.pushState({ role: 'CANDIDATE' }, '', '/');
+        }
+      }
+    }
+  };
 
   // Handle Admin Login
   const handleAdminSubmit = (e: React.FormEvent) => {
@@ -166,11 +208,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
           {/* Top Primary Switcher: Candidate vs Admin */}
           <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
             <button
-              onClick={() => {
-                setRoleMode('CANDIDATE');
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
+              onClick={() => handleRoleSwitch('CANDIDATE')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
                 roleMode === 'CANDIDATE'
                   ? 'bg-blue-900 text-white shadow-sm'
@@ -182,11 +220,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
             </button>
 
             <button
-              onClick={() => {
-                setRoleMode('ADMIN');
-                setErrorMsg(null);
-                setSuccessMsg(null);
-              }}
+              onClick={() => handleRoleSwitch('ADMIN')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
                 roleMode === 'ADMIN'
                   ? 'bg-blue-900 text-white shadow-sm'

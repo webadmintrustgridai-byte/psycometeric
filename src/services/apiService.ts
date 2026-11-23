@@ -744,6 +744,109 @@ export const ApiService = {
     this.logAudit(adminId, 'ADMIN', 'RETAKE_AUTHORIZED', 'ASSESSMENT', assessmentId, `Retake authorized for ${candidateId}. Reason: ${reason}`);
   },
 
+  /**
+   * Omnipotent Admin Master Controls:
+   * Increase assessment duration, increase attempt counts, unlock/reset attempts for any candidate
+   */
+  adminOverrideAssessment(
+    candidateId: string,
+    assessmentId: string,
+    adminId: string,
+    options: {
+      durationMinutes?: number;
+      attemptsAllowed?: number;
+      unlockRetake?: boolean;
+      resetAttempt?: boolean;
+      reason?: string;
+    }
+  ): void {
+    const assignments = this.getAssignments();
+    const assignIdx = assignments.findIndex(a => a.Candidate_ID === candidateId && a.Assessment_ID === assessmentId);
+    if (assignIdx !== -1) {
+      if (typeof options.durationMinutes === 'number' && options.durationMinutes > 0) {
+        assignments[assignIdx].Duration_Minutes = options.durationMinutes;
+      }
+      if (typeof options.attemptsAllowed === 'number' && options.attemptsAllowed > 0) {
+        assignments[assignIdx].Attempt_Allowed = options.attemptsAllowed;
+      }
+      if (options.unlockRetake) {
+        assignments[assignIdx].Retake_Approved = true;
+        assignments[assignIdx].Assignment_Status = 'SCHEDULED';
+        if (options.reason) assignments[assignIdx].Retake_Reason = options.reason;
+      }
+      saveStorage(STORAGE_KEYS.ASSIGNMENTS, assignments);
+    }
+
+    // If resetAttempt requested, unlock completed attempt so candidate can retake
+    if (options.resetAttempt) {
+      const attempts = this.getAttempts();
+      const attIdx = attempts.findIndex(a => a.Candidate_ID === candidateId && a.Assessment_ID === assessmentId);
+      if (attIdx !== -1) {
+        attempts[attIdx].Attempt_Status = 'SCHEDULED' as any;
+        attempts[attIdx].Score = 0;
+        saveStorage(STORAGE_KEYS.ATTEMPTS, attempts);
+      }
+    }
+
+    // If an attempt is currently IN_PROGRESS and duration was increased, extend End_Timestamp_Deadline
+    if (typeof options.durationMinutes === 'number') {
+      const attempts = this.getAttempts();
+      const activeAtt = attempts.find(a => a.Candidate_ID === candidateId && a.Assessment_ID === assessmentId && a.Attempt_Status === 'IN_PROGRESS');
+      if (activeAtt) {
+        const startTime = new Date(activeAtt.Start_Timestamp).getTime();
+        activeAtt.End_Timestamp_Deadline = new Date(startTime + options.durationMinutes * 60 * 1000).toISOString();
+        saveStorage(STORAGE_KEYS.ATTEMPTS, attempts);
+      }
+    }
+
+    this.syncToGas('adminOverrideAssessment', { candidateId, assessmentId, adminId, options });
+    this.logAudit(
+      adminId,
+      'ADMIN',
+      'ADMIN_OVERRIDE_ASSESSMENT',
+      'ASSESSMENT',
+      assessmentId,
+      `Admin master override for ${candidateId}: Duration=${options.durationMinutes}m, AttemptsAllowed=${options.attemptsAllowed}, Unlock=${options.unlockRetake}, Reset=${options.resetAttempt}. Reason: ${options.reason || 'Admin master adjustment'}`
+    );
+  },
+
+  /**
+   * Omnipotent Admin Master Update:
+   * Update candidate core details, 10th (M/S/E), 12th (MPCE), Semesters, and Entrance Exams (JEE, BITSAT, GATE)
+   */
+  adminUpdateCandidateMaster(
+    adminId: string,
+    candidateId: string,
+    updates: {
+      candidate: Partial<Candidate>;
+      academicProfile?: CandidateFullAcademicProfile;
+      entranceExams?: EntranceExamRecord[];
+      activities?: Partial<CandidateActivitiesRecord>;
+    }
+  ): Candidate {
+    const updated = this.updateCandidate(candidateId, updates.candidate);
+    if (updates.academicProfile) {
+      this.saveFullAcademicProfile(candidateId, updates.academicProfile);
+    }
+    if (updates.entranceExams) {
+      this.saveEntranceExams(candidateId, updates.entranceExams);
+    }
+    if (updates.activities) {
+      this.saveCandidateActivities(candidateId, updates.activities);
+    }
+
+    this.syncToGas('adminUpdateCandidateMaster', { adminId, candidateId, updates });
+    this.logAudit(
+      adminId,
+      'ADMIN',
+      'UPDATE_CANDIDATE_MASTER',
+      'CANDIDATE',
+      candidateId,
+      `Admin master updated complete profile (Academic M/S/E, MPCE, Semesters, Entrance Exams) for ${candidateId}`
+    );
+    return updated;
+  },
+
   // ==========================================
   // DB_8_Assessment_Attempts: SERVER TIMER & LIFECYCLE
   // ==========================================

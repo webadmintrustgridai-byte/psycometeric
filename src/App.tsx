@@ -3,7 +3,7 @@
  * App.tsx - Streamlined Dual-Portal Orchestrator with Role Authentication
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/layout/Header';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { UserPortal } from './components/candidate/UserPortal';
@@ -11,25 +11,91 @@ import { AuthScreen } from './components/auth/AuthScreen';
 import { ApiService } from './services/apiService';
 import { AuthSession, Candidate } from './types';
 
+// Helper to determine if current browser URL corresponds to /admin
+const isAdminPath = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const p = window.location.pathname.toLowerCase();
+  const h = window.location.hash.toLowerCase();
+  return p === '/admin' || p.startsWith('/admin/') || p.includes('/admin') || h.includes('admin');
+};
+
 export const App: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(() => ApiService.getCurrentSession());
   const [portalMode, setPortalMode] = useState<'ADMIN' | 'USER'>(() => {
     const cur = ApiService.getCurrentSession();
-    return (cur?.user.Role === 'ADMIN' || cur?.user.Role === 'SUPER_ADMIN') ? 'ADMIN' : 'USER';
+    if (cur?.user.Role === 'ADMIN' || cur?.user.Role === 'SUPER_ADMIN') {
+      return 'ADMIN';
+    }
+    if (isAdminPath()) {
+      return 'ADMIN';
+    }
+    return 'USER';
   });
+
+  // Synchronize browser URL bar with portalMode without full page reloads
+  const updateBrowserRoute = useCallback((mode: 'ADMIN' | 'USER') => {
+    if (typeof window === 'undefined') return;
+    const currentPath = window.location.pathname;
+    if (mode === 'ADMIN') {
+      if (!currentPath.includes('/admin')) {
+        window.history.pushState({ mode: 'ADMIN' }, '', '/admin');
+      }
+    } else {
+      if (currentPath.includes('/admin')) {
+        window.history.pushState({ mode: 'USER' }, '', '/');
+      }
+    }
+  }, []);
+
+  const handlePortalModeChange = (mode: 'ADMIN' | 'USER') => {
+    setPortalMode(mode);
+    updateBrowserRoute(mode);
+  };
+
+  // Sync state on popstate and hashchange (browser forward/back or URL typing)
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const onAdmin = isAdminPath();
+      if (onAdmin) {
+        setPortalMode('ADMIN');
+      } else {
+        if (!session || (session.user.Role !== 'ADMIN' && session.user.Role !== 'SUPER_ADMIN')) {
+          setPortalMode('USER');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+
+    // Initial sync
+    if (isAdminPath() && portalMode !== 'ADMIN') {
+      setPortalMode('ADMIN');
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, [session, portalMode]);
 
   const handleLoginSuccess = (newSession: AuthSession) => {
     setSession(newSession);
     if (newSession.user.Role === 'ADMIN' || newSession.user.Role === 'SUPER_ADMIN') {
       setPortalMode('ADMIN');
+      updateBrowserRoute('ADMIN');
     } else {
       setPortalMode('USER');
+      updateBrowserRoute('USER');
     }
   };
 
   const handleLogout = () => {
     ApiService.logout();
     setSession(null);
+    if (!isAdminPath()) {
+      updateBrowserRoute('USER');
+    }
   };
 
   // If not authenticated, display the unified Auth Portal
@@ -48,7 +114,7 @@ export const App: React.FC = () => {
       {/* Header with Role Awareness & Logout */}
       <Header
         portalMode={portalMode}
-        onPortalModeChange={setPortalMode}
+        onPortalModeChange={handlePortalModeChange}
         currentSession={session}
         onLogout={handleLogout}
       />

@@ -58,6 +58,19 @@ export const CandidateComparisonMatrix: React.FC = () => {
   const colA = acadA.find(a => a.Education_Level === 'COLLEGE_SEMESTER');
   const colB = acadB.find(a => a.Education_Level === 'COLLEGE_SEMESTER');
 
+  // Load Entrance Exams
+  const examsA = ApiService.getEntranceExams(candA.Candidate_ID);
+  const examsB = ApiService.getEntranceExams(candB.Candidate_ID);
+
+  const jeeA = examsA.find(e => e.Examination_Name === 'JEE_MAIN' || e.Examination_Name === 'JEE_ADVANCED');
+  const jeeB = examsB.find(e => e.Examination_Name === 'JEE_MAIN' || e.Examination_Name === 'JEE_ADVANCED');
+
+  const bitsatA = examsA.find(e => e.Examination_Name === 'BITSAT');
+  const bitsatB = examsB.find(e => e.Examination_Name === 'BITSAT');
+
+  const gateA = examsA.find(e => e.Examination_Name === 'GATE');
+  const gateB = examsB.find(e => e.Examination_Name === 'GATE');
+
   // Load Attempts & Scores
   const attAptA = attempts.find(a => a.Candidate_ID === candA.Candidate_ID && a.Assessment_ID === 'ASM_APTITUDE');
   const attAptB = attempts.find(a => a.Candidate_ID === candB.Candidate_ID && a.Assessment_ID === 'ASM_APTITUDE');
@@ -104,6 +117,9 @@ export const CandidateComparisonMatrix: React.FC = () => {
       '12th Mathematics,' + (hsc12A?.Mathematics_Marks || 'N/A') + ',' + (hsc12B?.Mathematics_Marks || 'N/A'),
       '12th Percentage,' + (hsc12A?.Percentage || 'N/A') + '%,' + (hsc12B?.Percentage || 'N/A') + '%',
       'Overall CGPA,' + (colA?.Overall_CGPA || 'N/A') + ',' + (colB?.Overall_CGPA || 'N/A'),
+      'JEE Score / %ile,' + (jeeA ? `${jeeA.Score} (${jeeA.Percentile}%)` : 'N/A') + ',' + (jeeB ? `${jeeB.Score} (${jeeB.Percentile}%)` : 'N/A'),
+      'BITSAT Score / %ile,' + (bitsatA ? `${bitsatA.Score} (${bitsatA.Percentile}%)` : 'N/A') + ',' + (bitsatB ? `${bitsatB.Score} (${bitsatB.Percentile}%)` : 'N/A'),
+      'GATE Score (1000) / AIR,' + (gateA ? `${gateA.Score} (#${gateA.Rank})` : 'N/A') + ',' + (gateB ? `${gateB.Score} (#${gateB.Rank})` : 'N/A'),
       'Aptitude Score (out of 30),' + (attAptA?.Score || 'N/A') + ',' + (attAptB?.Score || 'N/A'),
       'Comprehension Score (out of 30),' + (attCmpA?.Score || 'N/A') + ',' + (attCmpB?.Score || 'N/A'),
       'EI & Situational Score (out of 30),' + (attEiA?.Score || 'N/A') + ',' + (attEiB?.Score || 'N/A'),
@@ -321,6 +337,38 @@ export const CandidateComparisonMatrix: React.FC = () => {
                 <td className="py-3 px-6 text-slate-600">Active Backlogs / Arrears</td>
                 <td className="py-3 px-6 font-bold">{colA?.Backlogs ?? 0}</td>
                 <td className="py-3 px-6 font-bold">{colB?.Backlogs ?? 0}</td>
+              </tr>
+
+              {/* 4. National Competitive Entrance Exams (JEE, BITSAT, GATE) */}
+              <tr className="bg-purple-50/50 font-bold text-purple-900 text-[11px] uppercase">
+                <td colSpan={3} className="py-2.5 px-6">4. Entrance Examinations: JEE, BITSAT & GATE Score</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-6 text-slate-600">JEE Main / Advanced</td>
+                <td className="py-3 px-6 font-bold text-slate-900">
+                  {jeeA ? `${jeeA.Score} marks (${jeeA.Percentile}%ile, Rank #${jeeA.Rank})` : 'N/A'}
+                </td>
+                <td className="py-3 px-6 font-bold text-slate-900">
+                  {jeeB ? `${jeeB.Score} marks (${jeeB.Percentile}%ile, Rank #${jeeB.Rank})` : 'N/A'}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-3 px-6 text-slate-600">BITSAT</td>
+                <td className="py-3 px-6 font-bold text-slate-900">
+                  {bitsatA ? `${bitsatA.Score} marks (${bitsatA.Percentile}%ile, Rank #${bitsatA.Rank})` : 'N/A'}
+                </td>
+                <td className="py-3 px-6 font-bold text-slate-900">
+                  {bitsatB ? `${bitsatB.Score} marks (${bitsatB.Percentile}%ile, Rank #${bitsatB.Rank})` : 'N/A'}
+                </td>
+              </tr>
+              <tr className="bg-purple-50/30">
+                <td className="py-3 px-6 font-bold text-purple-950">GATE Score (out of 1000)</td>
+                <td className="py-3 px-6 font-black text-purple-900">
+                  {gateA ? `${gateA.Score} / 1000 (${gateA.Percentile}%ile, AIR #${gateA.Rank})` : 'N/A'}
+                </td>
+                <td className="py-3 px-6 font-black text-purple-900">
+                  {gateB ? `${gateB.Score} / 1000 (${gateB.Percentile}%ile, AIR #${gateB.Rank})` : 'N/A'}
+                </td>
               </tr>
 
               {/* 4. Assessment 1: Aptitude */}

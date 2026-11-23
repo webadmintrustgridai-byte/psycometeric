@@ -31,7 +31,8 @@ import {
   ShieldCheck,
   Building,
   GraduationCap,
-  PlayCircle
+  PlayCircle,
+  Sliders
 } from 'lucide-react';
 
 interface RecruiterDashboardProps {
@@ -56,6 +57,7 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
   // Modals State
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [detailModalTab, setDetailModalTab] = useState<'PSYCHOMETRICS' | 'ACADEMIC_EXAMS' | 'ADMIN_CONTROLS'>('PSYCHOMETRICS');
   const [scheduleModalCandidate, setScheduleModalCandidate] = useState<Candidate | null>(null);
   const [retakeModalCandidate, setRetakeModalCandidate] = useState<Candidate | null>(null);
 
@@ -450,7 +452,21 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
                       <td className="py-4 px-6 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => setSelectedCandidate(c)}
+                            onClick={() => {
+                              setSelectedCandidate(c);
+                              setDetailModalTab('ADMIN_CONTROLS');
+                            }}
+                            className="p-1.5 rounded-xl text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+                            title="Admin Master Controls: Edit Details, Increase Duration & Retakes"
+                          >
+                            <Sliders className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedCandidate(c);
+                              setDetailModalTab('PSYCHOMETRICS');
+                            }}
                             className="p-1.5 rounded-xl text-slate-500 hover:text-blue-900 hover:bg-blue-50 transition-colors"
                             title="View Full Profile Drawer"
                           >
@@ -499,12 +515,16 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
         }}
       />
 
-      {/* MODAL 2: CANDIDATE DETAIL DRAWER */}
+      {/* MODAL 2: CANDIDATE DETAIL DRAWER & ADMIN MASTER CONTROLS */}
       {selectedCandidate && (
         <CandidateDetailModal
           candidate={selectedCandidate}
           isOpen={Boolean(selectedCandidate)}
+          initialTab={detailModalTab}
           onClose={() => setSelectedCandidate(null)}
+          onCandidateUpdated={() => {
+            setCandidates(ApiService.getCandidates());
+          }}
         />
       )}
 

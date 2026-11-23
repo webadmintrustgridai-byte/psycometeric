@@ -117,8 +117,25 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
   const [backlogs, setBacklogs] = useState<number>(recCol?.Backlogs || 0);
   const [arrearsHistory, setArrearsHistory] = useState<string>(recCol?.Arrears_History || 'Nil');
 
-  // Entrance Exams & Activities
-  const [entranceExams] = useState<EntranceExamRecord[]>(() => ApiService.getEntranceExams(candidate?.Candidate_ID || ''));
+  // Entrance Exams State (JEE, BITSAT & GATE Score)
+  const initialExams = ApiService.getEntranceExams(candidate?.Candidate_ID || '');
+  const jeeInit = initialExams.find(e => e.Examination_Name === 'JEE_MAIN' || e.Examination_Name === 'JEE_ADVANCED');
+  const bitsatInit = initialExams.find(e => e.Examination_Name === 'BITSAT');
+  const gateInit = initialExams.find(e => e.Examination_Name === 'GATE');
+
+  const [jeeScore, setJeeScore] = useState<string>(jeeInit?.Score ? String(jeeInit.Score) : '260');
+  const [jeePercentile, setJeePercentile] = useState<string>(jeeInit?.Percentile ? String(jeeInit.Percentile) : '99.12');
+  const [jeeRank, setJeeRank] = useState<string>(jeeInit?.Rank ? String(jeeInit.Rank) : '8420');
+
+  const [bitsatScore, setBitsatScore] = useState<string>(bitsatInit?.Score ? String(bitsatInit.Score) : '342');
+  const [bitsatPercentile, setBitsatPercentile] = useState<string>(bitsatInit?.Percentile ? String(bitsatInit.Percentile) : '98.8');
+  const [bitsatRank, setBitsatRank] = useState<string>(bitsatInit?.Rank ? String(bitsatInit.Rank) : '2150');
+
+  const [gateScore, setGateScore] = useState<string>(gateInit?.Score ? String(gateInit.Score) : '785');
+  const [gatePercentile, setGatePercentile] = useState<string>(gateInit?.Percentile ? String(gateInit.Percentile) : '99.42');
+  const [gateRank, setGateRank] = useState<string>(gateInit?.Rank ? String(gateInit.Rank) : '312');
+
+  const [entranceExams, setEntranceExams] = useState<EntranceExamRecord[]>(initialExams);
   const [activities] = useState<CandidateActivitiesRecord | undefined>(() => ApiService.getCandidateActivities(candidate?.Candidate_ID || ''));
 
   // Video Profile state
@@ -192,6 +209,48 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
     };
 
     ApiService.saveFullAcademicProfile(candidate.Candidate_ID, fullProfile);
+
+    // Save National Entrance Exams (JEE, BITSAT & GATE Score)
+    const examsToSave: EntranceExamRecord[] = [];
+    if (jeeScore) {
+      examsToSave.push({
+        Exam_Record_ID: jeeInit?.Exam_Record_ID || `ENT_JEE_${Date.now()}`,
+        Candidate_ID: candidate.Candidate_ID,
+        Examination_Name: 'JEE_MAIN',
+        Examination_Year: '2022',
+        Score: Number(jeeScore),
+        Percentile: Number(jeePercentile),
+        Rank: Number(jeeRank),
+        Created_At: new Date().toISOString()
+      });
+    }
+    if (bitsatScore) {
+      examsToSave.push({
+        Exam_Record_ID: bitsatInit?.Exam_Record_ID || `ENT_BIT_${Date.now()}`,
+        Candidate_ID: candidate.Candidate_ID,
+        Examination_Name: 'BITSAT',
+        Examination_Year: '2022',
+        Score: Number(bitsatScore),
+        Percentile: Number(bitsatPercentile),
+        Rank: Number(bitsatRank),
+        Created_At: new Date().toISOString()
+      });
+    }
+    if (gateScore) {
+      examsToSave.push({
+        Exam_Record_ID: gateInit?.Exam_Record_ID || `ENT_GATE_${Date.now()}`,
+        Candidate_ID: candidate.Candidate_ID,
+        Examination_Name: 'GATE',
+        Examination_Year: '2025',
+        Score: Number(gateScore),
+        Percentile: Number(gatePercentile),
+        Rank: Number(gateRank),
+        Created_At: new Date().toISOString()
+      });
+    }
+    ApiService.saveEntranceExams(candidate.Candidate_ID, examsToSave);
+    setEntranceExams(examsToSave);
+
     setIsSavedInDb(true);
     setTimeout(() => setIsSavedInDb(false), 2500);
   };
@@ -552,7 +611,7 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
           {/* Section 1: 10th Standard / SSLC */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-blue-900 bg-blue-50 px-3 py-1 rounded-xl inline-block">
-              1. 10th Standard / SSLC Records
+              1. 10th Standard / SSLC Marks (M / S / E: Mathematics, Science, English)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
@@ -625,7 +684,7 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
           {/* Section 2: 12th Standard / HSC */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <h3 className="text-xs font-bold uppercase tracking-wider text-blue-900 bg-blue-50 px-3 py-1 rounded-xl inline-block">
-              2. 12th Standard / HSC (MPC / Technical Stream)
+              2. 12th Standard / HSC Marks (M / P / C / E: Mathematics, Physics, Chemistry, English)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-2">
@@ -803,13 +862,134 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
             </div>
           </div>
 
+          {/* Section 4: National Competitive Entrance Examinations (JEE, BITSAT & GATE Score) */}
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-purple-900 bg-purple-50 px-3 py-1 rounded-xl inline-block">
+              4. National Entrance Examinations (JEE, BITSAT & GATE Score)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              {/* JEE */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <span className="font-bold text-xs text-slate-900 block">JEE Main / Advanced</span>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Score</label>
+                  <input
+                    type="number"
+                    value={jeeScore}
+                    onChange={e => setJeeScore(e.target.value)}
+                    placeholder="e.g. 260"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Percentile (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={jeePercentile}
+                    onChange={e => setJeePercentile(e.target.value)}
+                    placeholder="e.g. 99.12"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold text-blue-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">All India Rank</label>
+                  <input
+                    type="number"
+                    value={jeeRank}
+                    onChange={e => setJeeRank(e.target.value)}
+                    placeholder="e.g. 8420"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* BITSAT */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <span className="font-bold text-xs text-slate-900 block">BITSAT</span>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Score</label>
+                  <input
+                    type="number"
+                    value={bitsatScore}
+                    onChange={e => setBitsatScore(e.target.value)}
+                    placeholder="e.g. 342"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Percentile (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={bitsatPercentile}
+                    onChange={e => setBitsatPercentile(e.target.value)}
+                    placeholder="e.g. 98.8"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold text-blue-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Rank</label>
+                  <input
+                    type="number"
+                    value={bitsatRank}
+                    onChange={e => setBitsatRank(e.target.value)}
+                    placeholder="e.g. 2150"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* GATE SCORE */}
+              <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-purple-950 block">GATE Score</span>
+                  <span className="text-[10px] bg-purple-200/80 text-purple-900 font-extrabold px-2 py-0.5 rounded-md">Graduate Exam</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-purple-900 mb-1">GATE Score (out of 1000)</label>
+                  <input
+                    type="number"
+                    value={gateScore}
+                    onChange={e => setGateScore(e.target.value)}
+                    placeholder="e.g. 785"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-300 font-black text-purple-950 focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-purple-900 mb-1">GATE Percentile (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={gatePercentile}
+                    onChange={e => setGatePercentile(e.target.value)}
+                    placeholder="e.g. 99.42"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-300 font-black text-purple-900 focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-purple-900 mb-1">All India Rank (AIR)</label>
+                  <input
+                    type="number"
+                    value={gateRank}
+                    onChange={e => setGateRank(e.target.value)}
+                    placeholder="e.g. 312"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-300 font-black text-purple-950 focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           <div className="flex justify-end pt-4 border-t border-slate-100">
             <button
               type="submit"
               className="px-6 py-2.5 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-800 transition-all flex items-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Save Academic Credentials</span>
+              <span>Save Academic Credentials & Entrance Exam Scores</span>
             </button>
           </div>
         </form>

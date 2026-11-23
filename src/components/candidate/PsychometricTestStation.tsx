@@ -68,6 +68,7 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
 
   // Test State
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [passageFontSize, setPassageFontSize] = useState<'sm' | 'base' | 'lg'>('sm');
   const [responses, setResponses] = useState<Record<string, { selectedAnswer: 'A' | 'B' | 'C' | 'D' | ''; timeTakenSeconds: number }>>(() => {
     const existing = ApiService.getResponsesForAttempt(attempt.Attempt_ID);
     const map: Record<string, { selectedAnswer: 'A' | 'B' | 'C' | 'D' | ''; timeTakenSeconds: number }> = {};
@@ -360,22 +361,68 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
       {/* Main Workspace Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* LEFT / CENTER: QUESTION CONTAINER & CONTEXTUAL PASSAGE / SITUATION */}
+        {/* COMPREHENSION PASSAGE PANE (WHEN PASSAGE IS PRESENT - CAT / GMAT / BANK PO SPLIT VIEW) */}
+        {currentQuestion?.Passage_Text && (
+          <div className="lg:col-span-6 flex flex-col bg-white p-6 rounded-3xl border border-slate-200 shadow-sm max-h-[720px]">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-900" />
+                <span className="text-xs font-black text-blue-900 uppercase tracking-wider">
+                  Reading Passage (1,500 – 3,000 Words)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold bg-purple-50 text-purple-900 px-2 py-0.5 rounded-full hidden sm:inline">
+                  CAT / GMAT Standard
+                </span>
+                <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setPassageFontSize('sm')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded ${passageFontSize === 'sm' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
+                  >
+                    A-
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPassageFontSize('base')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded ${passageFontSize === 'base' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
+                  >
+                    A
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPassageFontSize('lg')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded ${passageFontSize === 'lg' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
+                  >
+                    A+
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={`overflow-y-auto pr-3 leading-relaxed text-slate-800 font-sans space-y-3 whitespace-pre-line ${
+              passageFontSize === 'sm' ? 'text-xs' : passageFontSize === 'base' ? 'text-sm' : 'text-base'
+            }`}>
+              {currentQuestion.Passage_Text}
+            </div>
+          </div>
+        )}
+
+        {/* QUESTION CONTAINER */}
         <div className={`space-y-4 ${
-          currentQuestion?.Passage_Text || currentQuestion?.Situation_Text ? 'lg:col-span-8' : 'lg:col-span-8'
+          currentQuestion?.Passage_Text ? 'lg:col-span-6' : 'lg:col-span-8'
         }`}>
           
-          {/* CONTEXTUAL READING PASSAGE (ASSESSMENT 2) OR WORKPLACE SCENARIO (ASSESSMENT 3) */}
-          {(currentQuestion?.Passage_Text || currentQuestion?.Situation_Text) && (
+          {/* WORKPLACE SCENARIO (ONLY FOR ASSESSMENT 3 SJT) */}
+          {(!currentQuestion?.Passage_Text && currentQuestion?.Situation_Text) && (
             <div className="bg-slate-50/80 p-5 rounded-3xl border border-slate-200 shadow-sm max-h-72 overflow-y-auto space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-blue-900 uppercase tracking-wider">
                 <BookOpen className="w-4 h-4" />
-                <span>
-                  {currentQuestion.Passage_Text ? 'Contextual Reading Passage (Keep in View)' : 'Workplace Professional Scenario'}
-                </span>
+                <span>Workplace Professional Scenario</span>
               </div>
               <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line font-sans">
-                {currentQuestion.Passage_Text || currentQuestion.Situation_Text}
+                {currentQuestion.Situation_Text}
               </p>
             </div>
           )}
@@ -478,62 +525,104 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
             </div>
           </div>
 
+          {/* COMPACT QUESTION PALETTE UNDERNEATH WHEN IN COMPREHENSION SPLIT VIEW */}
+          {currentQuestion?.Passage_Text && (
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-700">Question Palette (1 – 30)</h4>
+                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Ans ({answeredCount})</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Rev ({reviewCount})</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-10 gap-1.5">
+                {questions.map((q, idx) => {
+                  const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
+                  const isMarked = Boolean(markedForReview[q.Question_ID]);
+                  const isCurr = idx === currentIndex;
+
+                  let btnBg = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+                  if (isMarked) {
+                    btnBg = 'bg-purple-600 text-white';
+                  } else if (isAns) {
+                    btnBg = 'bg-emerald-600 text-white';
+                  }
+
+                  return (
+                    <button
+                      key={q.Question_ID}
+                      type="button"
+                      onClick={() => setCurrentIndex(idx)}
+                      className={`h-7 rounded-lg text-[11px] font-bold transition-all ${btnBg} ${
+                        isCurr ? 'ring-2 ring-blue-900 ring-offset-1 scale-105' : ''
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
         </div>
 
-        {/* RIGHT: QUESTION NAVIGATOR & SUBMISSION STATUS */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Question Navigator</h3>
+        {/* RIGHT: QUESTION NAVIGATOR (ONLY SHOWN FOR NON-PASSAGE TESTS) */}
+        {!currentQuestion?.Passage_Text && (
+          <div className="lg:col-span-4 space-y-4">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">Question Navigator</h3>
 
-            {/* Legend */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-600 font-semibold border-b border-slate-100 pb-3">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-emerald-500" /> Answered ({answeredCount})</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-slate-200" /> Unanswered ({unansweredCount})</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-purple-500" /> Marked ({reviewCount})</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md border-2 border-blue-900" /> Current</span>
-            </div>
+              {/* Legend */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-600 font-semibold border-b border-slate-100 pb-3">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-emerald-500" /> Answered ({answeredCount})</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-slate-200" /> Unanswered ({unansweredCount})</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-purple-500" /> Marked ({reviewCount})</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md border-2 border-blue-900" /> Current</span>
+              </div>
 
-            {/* Question Grid (30 Questions) */}
-            <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-1">
-              {questions.map((q, idx) => {
-                const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
-                const isMarked = Boolean(markedForReview[q.Question_ID]);
-                const isCurr = idx === currentIndex;
+              {/* Question Grid (30 Questions) */}
+              <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-1">
+                {questions.map((q, idx) => {
+                  const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
+                  const isMarked = Boolean(markedForReview[q.Question_ID]);
+                  const isCurr = idx === currentIndex;
 
-                let btnBg = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
-                if (isMarked) {
-                  btnBg = 'bg-purple-600 text-white';
-                } else if (isAns) {
-                  btnBg = 'bg-emerald-600 text-white';
-                }
+                  let btnBg = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+                  if (isMarked) {
+                    btnBg = 'bg-purple-600 text-white';
+                  } else if (isAns) {
+                    btnBg = 'bg-emerald-600 text-white';
+                  }
 
-                return (
-                  <button
-                    key={q.Question_ID}
-                    type="button"
-                    onClick={() => setCurrentIndex(idx)}
-                    className={`h-9 rounded-xl text-xs font-bold transition-all relative ${btnBg} ${
-                      isCurr ? 'ring-2 ring-blue-900 ring-offset-2 scale-105' : ''
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={q.Question_ID}
+                      type="button"
+                      onClick={() => setCurrentIndex(idx)}
+                      className={`h-9 rounded-xl text-xs font-bold transition-all relative ${btnBg} ${
+                        isCurr ? 'ring-2 ring-blue-900 ring-offset-2 scale-105' : ''
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(true)}
-                className="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                <span>Finish & Submit</span>
-              </button>
+              <div className="pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(true)}
+                  className="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Submit Assessment</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
       </div>
 
