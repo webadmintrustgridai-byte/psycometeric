@@ -45,24 +45,38 @@ import { GOOGLE_APPS_SCRIPT_URL, GOOGLE_SPREADSHEET_ID } from '../config';
 import { ScoringEngine } from './scoringEngine';
 
 const STORAGE_KEYS = {
-  CANDIDATES: 'tg_db_1_candidates_v4',
-  ACADEMIC_PROFILES: 'tg_db_2_academic_profiles_v4',
-  ACTIVITIES: 'tg_db_3_activities_v4',
-  ENTRANCE_EXAMS: 'tg_db_4_entrance_exams_v4',
-  ASSESSMENTS: 'tg_db_5_assessments_v4',
-  QUESTIONS: 'tg_db_6_questions_v4',
-  ASSIGNMENTS: 'tg_db_7_assignments_v4',
-  ATTEMPTS: 'tg_db_8_attempts_v4',
-  RESPONSES: 'tg_db_9_responses_v4',
-  RESULTS: 'tg_db_10_results_v4',
-  VIDEOS: 'tg_db_11_videos_v4',
-  ADMIN_USERS: 'tg_db_12_admin_users_v4',
-  CONFIG: 'tg_db_13_config_v4',
-  AUDIT_LOGS: 'tg_db_14_audit_logs_v4',
-  ACTIVE_SESSION: 'tg_active_session_v4',
-  CONSENTS: 'tg_consents_v4',
-  GAS_CONFIG: 'tg_gas_config_v4'
+  CANDIDATES: 'tg_db_1_candidates_v5',
+  ACADEMIC_PROFILES: 'tg_db_2_academic_profiles_v5',
+  ACTIVITIES: 'tg_db_3_activities_v5',
+  ENTRANCE_EXAMS: 'tg_db_4_entrance_exams_v5',
+  ASSESSMENTS: 'tg_db_5_assessments_v5',
+  QUESTIONS: 'tg_db_6_questions_v5',
+  ASSIGNMENTS: 'tg_db_7_assignments_v5',
+  ATTEMPTS: 'tg_db_8_attempts_v5',
+  RESPONSES: 'tg_db_9_responses_v5',
+  RESULTS: 'tg_db_10_results_v5',
+  VIDEOS: 'tg_db_11_videos_v5',
+  ADMIN_USERS: 'tg_db_12_admin_users_v5',
+  CONFIG: 'tg_db_13_config_v5',
+  AUDIT_LOGS: 'tg_db_14_audit_logs_v5',
+  ACTIVE_SESSION: 'tg_active_session_v5',
+  CONSENTS: 'tg_consents_v5',
+  GAS_CONFIG: 'tg_gas_config_v5'
 };
+
+// Automatic cleanup of legacy cached seed data
+if (typeof window !== 'undefined' && window.localStorage) {
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('tg_') && !k.endsWith('_v5')) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+}
 
 function loadStorage<T>(key: string, fallback: T): T {
   try {
@@ -845,6 +859,33 @@ export const ApiService = {
       `Admin master updated complete profile (Academic M/S/E, MPCE, Semesters, Entrance Exams) for ${candidateId}`
     );
     return updated;
+  },
+
+  /**
+   * Master Admin Reset: Purge all candidate records, test attempts & responses
+   * (Assessment Master and Question Banks remain 100% intact)
+   */
+  clearAllCandidateRecords(adminId: string): void {
+    saveStorage(STORAGE_KEYS.CANDIDATES, []);
+    saveStorage(STORAGE_KEYS.ACADEMIC_PROFILES, []);
+    saveStorage(STORAGE_KEYS.ACTIVITIES, []);
+    saveStorage(STORAGE_KEYS.ENTRANCE_EXAMS, []);
+    saveStorage(STORAGE_KEYS.ASSIGNMENTS, []);
+    saveStorage(STORAGE_KEYS.ATTEMPTS, []);
+    saveStorage(STORAGE_KEYS.RESPONSES, []);
+    saveStorage(STORAGE_KEYS.RESULTS, []);
+    saveStorage(STORAGE_KEYS.VIDEOS, []);
+    saveStorage(STORAGE_KEYS.CONSENTS, []);
+
+    this.syncToGas('clearCandidateRecords', { adminId });
+    this.logAudit(
+      adminId,
+      'ADMIN',
+      'PURGE_CANDIDATE_RECORDS',
+      'SYSTEM',
+      'DATABASE',
+      'All candidate profiles, academic records, attempts, and responses purged for clean assessment intake.'
+    );
   },
 
   // ==========================================

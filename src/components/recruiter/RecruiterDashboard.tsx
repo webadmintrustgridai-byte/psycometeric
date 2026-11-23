@@ -32,7 +32,8 @@ import {
   Building,
   GraduationCap,
   PlayCircle,
-  Sliders
+  Sliders,
+  Trash2
 } from 'lucide-react';
 
 interface RecruiterDashboardProps {
@@ -160,6 +161,14 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
     alert(`Retake authorized for ${retakeModalCandidate.Full_Name}. Reason recorded in audit log.`);
   };
 
+  const handleClearAllRecords = () => {
+    if (window.confirm('Are you sure you want to purge all candidate records, test attempts, and responses? Assessment templates and Question Banks will remain completely intact.')) {
+      ApiService.clearAllCandidateRecords('ADM_001');
+      setCandidates([]);
+      alert('All candidate records have been cleared. Ready for fresh candidate onboarding.');
+    }
+  };
+
   const handleExportCsv = () => {
     const headers = ['Candidate_ID', 'Full_Name', 'Email', 'College', 'Department', 'Semester', 'Status', 'Aptitude_Score', 'Comprehension_Score', 'EI_Score'];
     const rows = candidates.map(c => {
@@ -270,6 +279,15 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleClearAllRecords}
+              className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors border border-rose-200"
+              title="Purge all candidate records to start with a clean slate"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear Candidate Records</span>
+            </button>
+
             <button
               onClick={handleExportCsv}
               className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"

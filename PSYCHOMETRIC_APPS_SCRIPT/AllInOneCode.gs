@@ -157,6 +157,11 @@ function handleRequest(e, method) {
         responseData = deduplicateDatabase(ss);
         break;
 
+      case 'clearCandidateRecords':
+      case 'clearAllCandidateRecords':
+        responseData = clearAllCandidateRecords(ss);
+        break;
+
       // --- CANDIDATE OPERATIONS (DEDUPLICATION-SAFE) ---
       case 'createCandidate':
       case 'saveCandidate':
@@ -1025,4 +1030,45 @@ function deduplicateDatabase(ss) {
   }
 
   return { status: 'DEDUPLICATION_COMPLETE', report: report };
+}
+
+// ==========================================
+// PURGE CANDIDATE RECORDS (CLEAN SLATE UTILITY)
+// ==========================================
+/**
+ * Run this function from the Apps Script editor to clear all dummy/test candidate
+ * rows from Google Sheets, leaving table headers and Assessment/Question banks intact!
+ */
+function clearAllCandidateRecords(ss) {
+  if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  var candidateTabs = [
+    DB_TABS.CANDIDATES,
+    DB_TABS.ACADEMIC_PROFILE,
+    DB_TABS.ACTIVITIES,
+    DB_TABS.ENTRANCE_EXAMS,
+    DB_TABS.ASSIGNMENTS,
+    DB_TABS.ATTEMPTS,
+    DB_TABS.RESPONSES,
+    DB_TABS.RESULTS,
+    DB_TABS.VIDEO_PROFILES
+  ];
+
+  var cleared = {};
+
+  for (var i = 0; i < candidateTabs.length; i++) {
+    var tabName = candidateTabs[i];
+    var sheet = ss.getSheetByName(tabName);
+    if (!sheet) continue;
+
+    var numRows = sheet.getLastRow();
+    if (numRows > 1) {
+      sheet.deleteRows(2, numRows - 1);
+      cleared[tabName] = (numRows - 1) + ' rows purged';
+    } else {
+      cleared[tabName] = '0 rows (already clean)';
+    }
+  }
+
+  return { status: 'CANDIDATE_RECORDS_PURGED', details: cleared };
 }
