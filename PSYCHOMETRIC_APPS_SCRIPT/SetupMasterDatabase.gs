@@ -161,16 +161,8 @@ function seedInitialData(ss) {
   var userSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (userSheet.getLastRow() <= 1) {
     userSheet.appendRow([
-      'USR_000001', 'ORG_000001', 'Super Administrator', 'admin@trustgrid.ai',
-      Utils.hashPassword('Admin@12345'), 'SUPER_ADMIN', 'ACTIVE', '', new Date().toISOString()
-    ]);
-    userSheet.appendRow([
-      'USR_000002', 'ORG_000002', 'Sarah Jenkins', 'sarah.j@apextech.com',
-      Utils.hashPassword('Recruiter@123'), 'RECRUITER', 'ACTIVE', '', new Date().toISOString()
-    ]);
-    userSheet.appendRow([
-      'USR_000003', 'ORG_000002', 'David Miller', 'david.m@apextech.com',
-      Utils.hashPassword('Evaluator@123'), 'EVALUATOR', 'ACTIVE', '', new Date().toISOString()
+      'USR_000001', 'ORG_000001', 'Poojasri', 'poojasri@trustgrid.ai',
+      Utils.hashPassword('Pooj@2004*'), 'SUPER_ADMIN', 'ACTIVE', '', new Date().toISOString()
     ]);
   }
 

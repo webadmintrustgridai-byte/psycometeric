@@ -402,6 +402,200 @@ export const ApiService = {
     return { success: true, session, candidate: newCand };
   },
 
+  registerFullCandidate(data: {
+    // Personal
+    fullName: string;
+    email: string;
+    mobile: string;
+    dob?: string;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+    password?: string;
+    // College
+    collegeName: string;
+    department: string;
+    degree: string;
+    academicYear: string;
+    currentSemester: string;
+    collegeIdNumber: string;
+    overallCGPA: number;
+    // 10th Standard (M/S/E)
+    school10th?: string;
+    board10th?: string;
+    maths10th?: number;
+    science10th?: number;
+    english10th?: number;
+    total10th?: number;
+    percentage10th?: number;
+    passingYear10th?: string;
+    // 12th Standard (M/P/C/E)
+    college12th?: string;
+    board12th?: string;
+    maths12th?: number;
+    physics12th?: number;
+    chemistry12th?: number;
+    english12th?: number;
+    total12th?: number;
+    percentage12th?: number;
+    passingYear12th?: string;
+    // Entrance Exams (JEE, BITSAT, GATE)
+    gateScore?: number;
+    gatePercentile?: number;
+    gateRank?: number;
+    gateYear?: string;
+    jeePercentile?: number;
+    jeeRank?: number;
+    jeeYear?: string;
+    bitsatScore?: number;
+    bitsatYear?: string;
+  }): { success: boolean; session?: AuthSession; candidate?: Candidate; message?: string } {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const existing = this.getCandidates().find(c => 
+      (c.Primary_Email && c.Primary_Email.toLowerCase() === cleanEmail) ||
+      (c.Email && c.Email.toLowerCase() === cleanEmail)
+    );
+
+    if (existing) {
+      return {
+        success: false,
+        message: 'A candidate account with this email already exists. Please Sign In.'
+      };
+    }
+
+    // 1. Create Candidate Master Record
+    const newCand = this.createCandidate({
+      Full_Name: data.fullName.trim(),
+      Primary_Email: cleanEmail,
+      Email: cleanEmail,
+      Mobile_Number: data.mobile.trim(),
+      WhatsApp_Number: data.mobile.trim(),
+      Date_of_Birth: data.dob || '2004-01-01',
+      Gender: data.gender || 'PREFER_NOT_TO_SAY',
+      College_Name: data.collegeName.trim(),
+      Department: data.department.trim(),
+      Degree: data.degree.trim(),
+      Academic_Year: data.academicYear || '4th Year',
+      Current_Semester: data.currentSemester || 'Semester 7',
+      College_ID_Number: data.collegeIdNumber.trim(),
+      Registration_Status: 'APPROVED',
+      Profile_Status: 'PROFILE_COMPLETED',
+      Verification_Status: 'VERIFIED'
+    });
+
+    // 2. Save Academic Profile (10th M/S/E, 12th MPCE, College CGPA)
+    const p10Maths = Number(data.maths10th) || 90;
+    const p10Sci = Number(data.science10th) || 88;
+    const p10Eng = Number(data.english10th) || 85;
+    const p10Total = Number(data.total10th) || (p10Maths + p10Sci + p10Eng + 180);
+    const p10Perc = Number(data.percentage10th) || Math.round((p10Total / 500) * 100);
+
+    const p12Maths = Number(data.maths12th) || 92;
+    const p12Phy = Number(data.physics12th) || 90;
+    const p12Chem = Number(data.chemistry12th) || 88;
+    const p12Eng = Number(data.english12th) || 85;
+    const p12Total = Number(data.total12th) || (p12Maths + p12Phy + p12Chem + p12Eng + 90);
+    const p12Perc = Number(data.percentage12th) || Math.round((p12Total / 500) * 100);
+
+    this.saveAcademicProfiles(newCand.Candidate_ID, {
+      sslc10: {
+        schoolName: data.school10th?.trim() || 'Secondary High School',
+        board: data.board10th?.trim() || 'CBSE',
+        passingYear: data.passingYear10th || '2020',
+        mathsMarks: p10Maths,
+        scienceMarks: p10Sci,
+        englishMarks: p10Eng,
+        totalMarks: p10Total,
+        percentage: p10Perc
+      },
+      hsc12: {
+        schoolName: data.college12th?.trim() || 'Junior College',
+        board: data.board12th?.trim() || 'State Board',
+        passingYear: data.passingYear12th || '2022',
+        mathsMarks: p12Maths,
+        physicsMarks: p12Phy,
+        chemistryMarks: p12Chem,
+        englishMarks: p12Eng,
+        totalMarks: p12Total,
+        percentage: p12Perc
+      },
+      college: {
+        collegeName: data.collegeName.trim(),
+        degree: data.degree.trim(),
+        department: data.department.trim(),
+        currentSemester: data.currentSemester || 'Semester 7',
+        overallCGPA: Number(data.overallCGPA) || 8.5,
+        backlogs: 0,
+        arrearsHistory: 'NIL',
+        semesters: [
+          { semester: 1, gpa: Number(data.overallCGPA) || 8.5, credits: 24, status: 'CLEARED' },
+          { semester: 2, gpa: Number(data.overallCGPA) || 8.5, credits: 24, status: 'CLEARED' },
+          { semester: 3, gpa: Number(data.overallCGPA) || 8.5, credits: 24, status: 'CLEARED' },
+          { semester: 4, gpa: Number(data.overallCGPA) || 8.5, credits: 24, status: 'CLEARED' },
+          { semester: 5, gpa: Number(data.overallCGPA) || 8.5, credits: 24, status: 'CLEARED' },
+          { semester: 6, gpa: Number(data.overallCGPA) || 8.5, credits: 24, status: 'CLEARED' }
+        ]
+      }
+    });
+
+    // 3. Save Entrance Exams (GATE, JEE, BITSAT)
+    const entranceExams: EntranceExamRecord[] = [];
+    if (data.gateScore || data.gatePercentile || data.gateRank) {
+      entranceExams.push({
+        Exam_Record_ID: `ENT_GATE_${newCand.Candidate_ID}`,
+        Candidate_ID: newCand.Candidate_ID,
+        Examination_Name: 'GATE',
+        Examination_Year: data.gateYear || '2026',
+        Score: Number(data.gateScore) || undefined,
+        Percentile: Number(data.gatePercentile) || undefined,
+        Rank: Number(data.gateRank) || undefined
+      });
+    }
+    if (data.jeePercentile || data.jeeRank) {
+      entranceExams.push({
+        Exam_Record_ID: `ENT_JEE_${newCand.Candidate_ID}`,
+        Candidate_ID: newCand.Candidate_ID,
+        Examination_Name: 'JEE_MAIN',
+        Examination_Year: data.jeeYear || '2022',
+        Percentile: Number(data.jeePercentile) || undefined,
+        Rank: Number(data.jeeRank) || undefined
+      });
+    }
+    if (data.bitsatScore) {
+      entranceExams.push({
+        Exam_Record_ID: `ENT_BITSAT_${newCand.Candidate_ID}`,
+        Candidate_ID: newCand.Candidate_ID,
+        Examination_Name: 'BITSAT',
+        Examination_Year: data.bitsatYear || '2022',
+        Score: Number(data.bitsatScore) || undefined
+      });
+    }
+    if (entranceExams.length > 0) {
+      this.saveEntranceExams(newCand.Candidate_ID, entranceExams);
+    }
+
+    // 4. Create Active Session
+    const candidateUser: User = {
+      User_ID: newCand.Candidate_ID,
+      Organization_ID: 'ORG_000001',
+      Full_Name: newCand.Full_Name,
+      Email: newCand.Primary_Email,
+      Role: 'CANDIDATE',
+      Status: 'ACTIVE',
+      Created_At: newCand.Registration_Date
+    };
+
+    const session: AuthSession = {
+      user: candidateUser,
+      candidateId: newCand.Candidate_ID,
+      token: `TOK_${Math.random().toString(36).substr(2, 10).toUpperCase()}`,
+      loginTime: new Date().toISOString()
+    };
+
+    saveStorage(STORAGE_KEYS.ACTIVE_SESSION, session);
+    this.logAudit(candidateUser.User_ID, 'CANDIDATE', 'CANDIDATE_FULL_REGISTRATION', 'CANDIDATE', newCand.Candidate_ID, `Candidate ${newCand.Full_Name} registered with full academic credentials`);
+
+    return { success: true, session, candidate: newCand };
+  },
+
   updateCandidate(id: string, updates: Partial<Candidate>): Candidate {
     const candidates = this.getCandidates();
     const index = candidates.findIndex(c => c.Candidate_ID === id);
