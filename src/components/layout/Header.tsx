@@ -20,7 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentSession,
   onLogout
 }) => {
-  const isAdmin = currentSession?.user.Role === 'ADMIN';
+  const isAdmin = currentSession?.user.Role === 'ADMIN' || currentSession?.user.Role === 'SUPER_ADMIN';
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
@@ -94,8 +94,8 @@ export const Header: React.FC<HeaderProps> = ({
                     {currentSession.user.Full_Name}
                   </span>
                   <span className="text-[10px] font-semibold text-slate-500">
-                    {currentSession.user.Role === 'ADMIN' ? (
-                      <span className="text-blue-700 font-bold">Admin</span>
+                    {currentSession.user.Role === 'ADMIN' || currentSession.user.Role === 'SUPER_ADMIN' ? (
+                      <span className="text-blue-700 font-bold">{currentSession.user.Role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}</span>
                     ) : (
                       <span>Candidate ({currentSession.candidateId || 'Verified'})</span>
                     )}

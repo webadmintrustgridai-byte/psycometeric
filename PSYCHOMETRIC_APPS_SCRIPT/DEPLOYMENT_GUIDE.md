@@ -1,66 +1,82 @@
 # TRUSTGRID.AI - Google Apps Script Master Database Deployment Guide
-### Online MCQ Psychometric Assessment Platform with User Authentication & Voluntary Data Disclosure
+### Controlled Campus-Based Psychometric & AI Video Assessment Platform (14 Standardized Relational Tabs)
 
-This guide provides simple instructions to connect Google Sheets and Google Apps Script as your live master database for **TRUSTGRID.AI**.
+This guide provides instructions to connect Google Sheets and Google Apps Script as your live master database for **TRUSTGRID.AI**.
+
+---
+
+## Google Spreadsheet & Deployment Details
+- **Spreadsheet ID**: `16F6thCNBYdceto8Sxvf0t3Ldi9ao4lBokUGoOf8D0sI`
+- **Spreadsheet URL**: [https://docs.google.com/spreadsheets/d/16F6thCNBYdceto8Sxvf0t3Ldi9ao4lBokUGoOf8D0sI](https://docs.google.com/spreadsheets/d/16F6thCNBYdceto8Sxvf0t3Ldi9ao4lBokUGoOf8D0sI)
+- **Deployment URL**: `https://script.google.com/macros/s/AKfycby09Y3Ym1I5jwIU3dqQCMwFdijG3QhKfCmQ-De8vvcEDaYqvhRIrhmIDxvejc5Za0Ni/exec`
 
 ---
 
 ## 1-Minute Setup (Single Script File)
 
-We have provided a single self-contained script file that automatically sets up all database sheets, headers, authentication logging, voluntary data disclosure records, and 9-test scoring in one click:
+We have provided a single self-contained script file that automatically sets up all 14 database sheets, headers, authentication, academic profile ledgers, questions, server timers, and scoring in one click:
 👉 [`PSYCHOMETRIC_APPS_SCRIPT/AllInOneCode.gs`](file:///c:/Users/srimp/Downloads/Psychometric/PSYCHOMETRIC_APPS_SCRIPT/AllInOneCode.gs)
 
-### Step 1: Create a Google Spreadsheet
-1. Open [Google Sheets](https://sheets.new) in your browser.
-2. Name the spreadsheet: **`TRUSTGRID_AI_PSYCHOMETRIC_DB`**.
-
-### Step 2: Open Apps Script
-1. In the top menu of your Google Sheet, click **Extensions > Apps Script**.
-2. Delete any boilerplate code inside `Code.gs`.
+### Step 1: Open Google Sheets & Apps Script
+1. Open your master sheet: [https://docs.google.com/spreadsheets/d/16F6thCNBYdceto8Sxvf0t3Ldi9ao4lBokUGoOf8D0sI](https://docs.google.com/spreadsheets/d/16F6thCNBYdceto8Sxvf0t3Ldi9ao4lBokUGoOf8D0sI).
+2. Click **Extensions > Apps Script**.
 3. Open [`PSYCHOMETRIC_APPS_SCRIPT/AllInOneCode.gs`](file:///c:/Users/srimp/Downloads/Psychometric/PSYCHOMETRIC_APPS_SCRIPT/AllInOneCode.gs), copy all contents, and paste them into the Apps Script editor.
-4. Click the **Save** disk icon (or press `Ctrl + S`).
+4. Click **Save** (`Ctrl + S`).
+
+### Step 2: Initialize Database Sheets
+1. In the Apps Script toolbar function dropdown, select **`setupMasterDatabase`**.
+2. Click **Run**. Grant permissions when prompted.
+3. This creates all 14 relational database sheets with headers and sets up default Super Admin (`poojasri@trustgrid.ai`).
 
 ### Step 3: Deploy as a Web App
-1. Click the blue **Deploy** button at top right > **New deployment**.
-2. Click the gear icon next to "Select type" and choose **Web app**.
-3. Fill in the options:
-   - **Description**: `TRUSTGRID.AI Psychometric, Auth & Consent API`
-   - **Execute as**: `Me (your email)`
-   - **Who has access**: `Anyone` (Required for browser client submissions without OAuth challenges)
-4. Click **Deploy**.
-5. When prompted, click **Authorize access**, select your Google account, and click **Allow**.
-6. Copy the generated **Web App URL** (`https://script.google.com/macros/s/.../exec`).
-
-### Step 4: Connect to the TRUSTGRID.AI Frontend
-Paste your copied Web App URL into:
-👉 [`src/config.ts`](file:///c:/Users/srimp/Downloads/Psychometric/src/config.ts):
-```typescript
-export const GOOGLE_APPS_SCRIPT_URL: string = 'https://script.google.com/macros/s/.../exec';
-```
+1. Click **Deploy > Manage Deployments > Edit** (or New deployment).
+2. Version: **New Version**.
+3. Execute as: **Me**.
+4. Who has access: **Anyone**.
+5. Click **Deploy** and verify the Web App URL matches [`src/config.ts`](file:///c:/Users/srimp/Downloads/Psychometric/src/config.ts).
 
 ---
 
-## Automatically Created Google Sheets Database Tables
+## The 14 Standardized Database Sheets
 
-When your first request arrives, the script automatically provisions 7 relational sheets with `#001A9C` royal blue headers and white bold text:
+1. **`DB_1_Candidates`**:
+   `Candidate_ID`, `Registration_Date`, `Full_Name`, `Primary_Email`, `Secondary_Email`, `Mobile_Number`, `WhatsApp_Number`, `Date_of_Birth`, `College_Name`, `Department`, `Degree`, `Academic_Year`, `Current_Semester`, `College_ID_Number`, `Photograph_URL`, `Registration_Status`, `Profile_Status`, `Approval_Date`, `Approved_By`
 
-1. **`DB_Users`**:
-   `User_ID`, `Full_Name`, `Email`, `Role`, `Status`, `Last_Login`, `Created_At`
+2. **`DB_2_Academic_Profile`**:
+   `Academic_Record_ID`, `Candidate_ID`, `Education_Level`, `School_or_College`, `Board_or_University`, `Passing_Year`, `Mathematics_Marks`, `Science_Marks`, `Physics_Marks`, `Chemistry_Marks`, `English_Marks`, `Total_Marks`, `Percentage`, `Semester_Number`, `Semester_Marks`, `Semester_CGPA`, `Overall_CGPA`, `Backlogs`
 
-2. **`DB_Auth_Sessions`**:
-   `Session_ID`, `User_ID`, `Email`, `Full_Name`, `Role`, `Action` (LOGIN / REGISTER / LOGOUT), `Timestamp`
+3. **`DB_3_Candidate_Activities`**:
+   `Activity_ID`, `Candidate_ID`, `NCC_Participation`, `Sports_Activities`, `Extracurricular_Activities`, `Achievements`, `Resume_URL`, `College_ID_URL`, `Certificates_URL`
 
-3. **`DB_Candidates`**:
-   `Candidate_ID`, `Full_Name`, `Email`, `Phone_Number`, `Current_Designation`, `Current_Organization`, `Total_Experience`, `Location`, `Skills`, `Resume_URL`, `Verification_Status`, `Consent_Status`, `Created_At`
+4. **`DB_4_Entrance_Exams`**:
+   `Exam_Record_ID`, `Candidate_ID`, `Examination_Name`, `Examination_Year`, `Score`, `Percentile`, `Rank`, `Scorecard_URL`
 
-4. **`DB_Consent_Submissions`** *(Voluntary Data Disclosure & Submission)*:
-   `Consent_ID`, `Candidate_ID`, `Candidate_Name`, `Candidate_Email`, `Consent_Status`, `Consent_Version`, `Disclosures_Accepted`, `Digital_Signature`, `Timestamp`
+5. **`DB_5_Assessment_Master`**:
+   `Assessment_ID`, `Assessment_Name`, `Assessment_Type`, `Duration_Minutes`, `Total_Questions`, `Total_Marks`, `Negative_Marking`, `Assessment_Status`, `Created_Date`, `Created_By`
 
-5. **`DB_Assessment_Results`** *(All 9 Assessment Modules with STEN Norms 1–10)*:
-   `Result_ID`, `Candidate_ID`, `Assessment_Title`, `Composite_Score_Pct`, `Aptitude_STEN`, `Logical_Reasoning_STEN`, `Verbal_Reasoning_STEN`, `Openness_STEN`, `Conscientiousness_STEN`, `Extraversion_STEN`, `Agreeableness_STEN`, `Emotional_Stability_STEN`, `Emotional_Intelligence_STEN`, `Situational_Judgement_STEN`, `Communication_Skills_STEN`, `Learning_Agility_STEN`, `Thematic_Apperception_STEN`, `Completed_At`
+6. **`DB_6_Question_Bank`**:
+   `Question_ID`, `Assessment_ID`, `Section_Name`, `Question_Text`, `Option_A`, `Option_B`, `Option_C`, `Option_D`, `Correct_Answer`, `Marks`, `Difficulty_Level`, `Explanation`, `Question_Status`
 
-6. **`DB_Item_Responses`**:
-   `Response_ID`, `Candidate_ID`, `Question_ID`, `Selected_Option`, `Points_Earned`, `Time_Taken_Seconds`, `Submitted_At`
+7. **`DB_7_Assessment_Assignments`**:
+   `Assignment_ID`, `Candidate_ID`, `Assessment_ID`, `Scheduled_Date`, `Scheduled_Start_Time`, `Assignment_Status`, `Approved_By`, `Attempt_Allowed`, `Retake_Approved`
 
-7. **`DB_Logs`**:
-   `Log_ID`, `Action`, `Payload_Snippet`, `Timestamp`
+8. **`DB_8_Assessment_Attempts`**:
+   `Attempt_ID`, `Candidate_ID`, `Assessment_ID`, `Start_Timestamp`, `End_Timestamp`, `End_Timestamp_Deadline`, `Duration_Seconds`, `Attempt_Status`, `Total_Questions`, `Answered_Questions`, `Score`, `Total_Marks`, `Submission_Type`, `Retake_Number`
+
+9. **`DB_9_Assessment_Responses`**:
+   `Response_ID`, `Attempt_ID`, `Candidate_ID`, `Assessment_ID`, `Question_ID`, `Selected_Answer`, `Marks_Awarded`, `Answer_Timestamp`
+
+10. **`DB_10_Assessment_Results`**:
+    `Result_ID`, `Candidate_ID`, `Assessment_ID`, `Attempt_ID`, `Section_Name`, `Total_Questions`, `Correct_Answers`, `Score`, `Total_Marks`, `Percentage`, `Result_Status`
+
+11. **`DB_11_Video_Profiles`**:
+    `Video_ID`, `Candidate_ID`, `Video_URL`, `Drive_File_ID`, `Submission_Date`, `Review_Status`, `Reviewed_By`, `Review_Comments`
+
+12. **`DB_12_Admin_Users`**:
+    `Admin_ID`, `Admin_Name`, `Email`, `Role`, `Password_Hash`, `Account_Status`, `Created_Date`, `Last_Login`
+
+13. **`DB_13_System_Configuration`**:
+    `Config_ID`, `Config_Name`, `Config_Value`, `Updated_By`, `Updated_Date`
+
+14. **`DB_14_Audit_Log`**:
+    `Log_ID`, `User_ID`, `User_Role`, `Action`, `Entity_Type`, `Entity_ID`, `Timestamp`, `IP_Address`, `Details`

@@ -1,199 +1,197 @@
 /**
  * TRUSTGRID.AI - ONLINE PSYCHOMETRIC ASSESSMENT PLATFORM
- * scoringEngine.ts - Validated Psychometric Scoring, STEN Transformation & Rubric Logic for 9 Tests
+ * scoringEngine.ts - Server-Authoritative Scoring Engine for 3 Consolidated Assessments
+ * - Assessment 1: Aptitude Assessment (30 Questions, 30 Marks)
+ * - Assessment 2: Test of Comprehension (30 Questions, 30 Marks)
+ * - Assessment 3: Emotional Intelligence & Situational Reaction (30 Questions, 30 Marks)
  */
 
-import { Question, ScoreRecord, AssessmentCategory } from '../types';
+import { QuestionBankItem, ScoreRecord, AssessmentResult } from '../types';
 
 export interface AssessmentCalculationResult {
   totalScore: number;
   totalPossible: number;
   percentageScore: number;
+  sectionResults: {
+    sectionName: string;
+    totalQuestions: number;
+    correctAnswers: number;
+    score: number;
+  }[];
   traitScores: ScoreRecord[];
   strengths: string[];
   developmentAreas: string[];
 }
 
 export const ScoringEngine = {
-  calculateScores(
+  /**
+   * Authoritatively score an assessment attempt
+   */
+  calculateAssessmentScore(
     attemptId: string,
     candidateId: string,
-    questions: Question[],
-    responses: Record<string, { selectedOptionId?: string; value?: any; timeTaken: number }>
+    assessmentId: string,
+    questions: QuestionBankItem[],
+    responses: Record<string, { selectedAnswer?: 'A' | 'B' | 'C' | 'D' | ''; timeTakenSeconds?: number }>
   ): AssessmentCalculationResult {
-    const scores: ScoreRecord[] = [];
-    const traitsMap: Record<string, { raw: number; count: number; category: AssessmentCategory }> = {};
-    let totalEarned = 0;
-    let totalPossible = 0;
+    let totalScore = 0;
+    const totalPossible = questions.length; // 30 questions = 30 marks
+
+    const sectionMap: Record<string, { total: number; correct: number; score: number }> = {};
 
     for (const q of questions) {
-      const resp = responses[q.Question_ID];
-      const category = q.Category;
-      const subcat = q.Subcategory || 'General';
-
-      if (!traitsMap[subcat]) {
-        traitsMap[subcat] = { raw: 0, count: 0, category };
+      const section = q.Section_Name || 'General';
+      if (!sectionMap[section]) {
+        sectionMap[section] = { total: 0, correct: 0, score: 0 };
       }
+      sectionMap[section].total += 1;
 
-      if (category === 'PERSONALITY' || category === 'EMOTIONAL_INTELLIGENCE' || category === 'LEARNING_AGILITY') {
-        const val = resp?.value ? Number(resp.value) : 3;
-        const finalVal = q.Reverse_Scored ? (6 - val) : val;
-        traitsMap[subcat].raw += finalVal;
-        traitsMap[subcat].count += 1;
-        totalEarned += (finalVal * 2);
-        totalPossible += 10;
-      } else if (category === 'APTITUDE' || category === 'LOGICAL_REASONING' || category === 'VERBAL_REASONING') {
-        const maxPts = q.Points || 10;
-        totalPossible += maxPts;
-        const opt = q.Options?.find(o => o.Option_ID === resp?.selectedOptionId);
-        if (opt?.Is_Correct) {
-          traitsMap[subcat].raw += maxPts;
-          totalEarned += maxPts;
+      const resp = responses[q.Question_ID];
+      const selected = resp?.selectedAnswer;
+
+      if (assessmentId === 'ASM_EI_SITUATIONAL') {
+        // Assessment 3: Emotional Intelligence & Situational Judgment
+        // Weights: A:5, B:2, C:1, D:1 -> scaled to 1 mark per question (weight / 5)
+        if (selected && q.Option_Weights) {
+          const weight = q.Option_Weights[selected] || 1;
+          const markAwarded = weight >= 4 ? 1 : weight >= 3 ? 0.75 : weight >= 2 ? 0.5 : 0.25;
+          sectionMap[section].score += markAwarded;
+          totalScore += markAwarded;
+          if (weight >= 4) {
+            sectionMap[section].correct += 1;
+          }
+        } else if (selected === q.Correct_Answer) {
+          sectionMap[section].score += 1;
+          sectionMap[section].correct += 1;
+          totalScore += 1;
         }
-        traitsMap[subcat].count += 1;
-      } else if (category === 'SITUATIONAL_JUDGEMENT' || category === 'COMMUNICATION_SKILLS' || category === 'THEMATIC_APPERCEPTION') {
-        const maxPts = q.Points || 10;
-        totalPossible += maxPts;
-        const opt = q.Options?.find(o => o.Option_ID === resp?.selectedOptionId);
-        const pts = opt?.Trait_Weight ? opt.Trait_Weight * 2 : 6;
-        traitsMap[subcat].raw += pts;
-        traitsMap[subcat].count += 1;
-        totalEarned += pts;
       } else {
-        const pts = resp?.selectedOptionId ? 5 : 0;
-        totalPossible += 5;
-        totalEarned += pts;
-        traitsMap[subcat].raw += pts;
-        traitsMap[subcat].count += 1;
+        // Assessment 1 (Aptitude) & Assessment 2 (Comprehension)
+        // 1 mark per correct answer, 0 for incorrect/unanswered (negative marking disabled)
+        if (selected && selected === q.Correct_Answer) {
+          sectionMap[section].score += (q.Marks || 1);
+          sectionMap[section].correct += 1;
+          totalScore += (q.Marks || 1);
+        }
       }
     }
 
-    // Process each domain into STEN (1-10) and normative percentiles
-    for (const [trait, data] of Object.entries(traitsMap)) {
-      let sten = 5;
-      let normalized = 50;
-      let percentile = 50;
-      let interpretation = '';
+    const roundedTotalScore = Math.round(totalScore * 10) / 10;
+    const percentageScore = totalPossible > 0 ? Math.round((roundedTotalScore / totalPossible) * 100) : 0;
 
-      if (data.category === 'PERSONALITY' || data.category === 'EMOTIONAL_INTELLIGENCE' || data.category === 'LEARNING_AGILITY') {
-        const avg = data.count > 0 ? data.raw / data.count : 3;
-        sten = Math.min(10, Math.max(1, Math.round(avg * 2)));
-        normalized = Math.round(avg * 20);
-        percentile = Math.min(99, Math.max(1, Math.round((avg / 5) * 100)));
-        interpretation = this.getTraitInterpretation(data.category, trait, sten);
-      } else {
-        const maxPossible = data.count * 10;
-        normalized = maxPossible > 0 ? Math.round((data.raw / maxPossible) * 100) : 50;
-        sten = Math.min(10, Math.max(1, Math.round((normalized / 100) * 9 + 1)));
-        percentile = Math.min(99, Math.max(1, normalized));
-        interpretation = this.getTraitInterpretation(data.category, trait, sten);
-      }
+    const sectionResults = Object.entries(sectionMap).map(([sectionName, stats]) => ({
+      sectionName,
+      totalQuestions: stats.total,
+      correctAnswers: stats.correct,
+      score: Math.round(stats.score * 10) / 10
+    }));
 
-      scores.push({
+    // Generate behavioral trait scores / STEN for campus decision support
+    const traitScores: ScoreRecord[] = sectionResults.map(s => {
+      const pct = s.totalQuestions > 0 ? Math.round((s.score / s.totalQuestions) * 100) : 50;
+      const sten = Math.min(10, Math.max(1, Math.round((pct / 100) * 9 + 1)));
+      return {
         Score_ID: `SCR_${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
         Attempt_ID: attemptId,
         Candidate_ID: candidateId,
-        Category: data.category,
-        Trait_Name: trait,
-        Raw_Score: data.raw,
-        Normalized_Score: normalized,
+        Category: assessmentId as any,
+        Trait_Name: s.sectionName,
+        Raw_Score: s.score,
+        Normalized_Score: pct,
         Sten_Score: sten,
-        Interpretation: interpretation,
-        Percentile: percentile,
+        Interpretation: this.getSectionInterpretation(assessmentId, s.sectionName, pct),
+        Percentile: Math.min(99, Math.max(1, pct)),
         Created_At: new Date().toISOString()
-      });
-    }
+      };
+    });
 
-    const percentageScore = totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 88;
-
-    const strengths = [
-      'Superior mathematical and logical deduction under time constraints',
-      'High conscientiousness paired with creative openness for technical innovation',
-      'Strong emotional self-regulation and empathetic communication during workplace conflict',
-      'Agile unlearning and high need for achievement in complex software architecture'
-    ];
-
-    const developmentAreas = [
-      'Expand comfort with high-level conceptual ambiguity in rapidly evolving project scopes',
-      'Maintain continuous asynchronous documentation for distributed engineering squads'
-    ];
+    const strengths = this.getStrengths(assessmentId, percentageScore);
+    const developmentAreas = this.getDevelopmentAreas(assessmentId, percentageScore);
 
     return {
-      totalScore: totalEarned,
+      totalScore: roundedTotalScore,
       totalPossible,
       percentageScore,
-      traitScores: scores,
+      sectionResults,
+      traitScores,
       strengths,
       developmentAreas
     };
   },
 
-  getTraitInterpretation(category: AssessmentCategory, trait: string, sten: number): string {
-    const key = trait.toLowerCase();
-    const high = sten >= 7;
-    const low = sten <= 4;
-
-    switch (category) {
-      case 'APTITUDE':
-        return high ? 'Superior precision in mathematical modeling and quantitative analysis.' :
-          low ? 'Needs structured formulas and computational verification tools.' :
-          'Reliable quantitative problem-solving under normal operational parameters.';
-
-      case 'LOGICAL_REASONING':
-        return high ? 'Exceptional inductive logic, pattern deduction, and algorithm inference.' :
-          low ? 'Benefits from step-by-step logic checklists and pair programming.' :
-          'Sound logical analysis across standard system workflows.';
-
-      case 'VERBAL_REASONING':
-        return high ? 'High verbal critical synthesis and nuanced technical documentation comprehension.' :
-          low ? 'Prefers concise bullet points and visual architectural diagrams.' :
-          'Solid verbal comprehension and technical articulation.';
-
-      case 'PERSONALITY':
-        if (key.includes('open')) {
-          return high ? 'Highly creative, intellectually curious; pioneers novel architectural paradigms.' :
-            low ? 'Pragmatic and execution-focused; relies on proven frameworks and stability.' :
-            'Balanced between technical experimentation and pragmatic shipping.';
-        }
-        if (key.includes('conscientious')) {
-          return high ? 'Disciplined, meticulous execution; high fidelity to architectural quality and deadlines.' :
-            low ? 'Spontaneous; benefits from automated test gates and strict sprint boundaries.' :
-            'Dependable engineer balancing thoroughness with development velocity.';
-        }
-        if (key.includes('stability') || key.includes('emotional') || key.includes('neuroticism')) {
-          return high ? 'Unshakeable composure during production outages; clear-headed crisis leader.' :
-            low ? 'High sensitivity to risk; benefits from clear escalation channels.' :
-            'Maintains calm composure under typical enterprise pressures.';
-        }
-        return high ? 'High interpersonal energy and collaborative team leadership.' : 'Focused on independent deep work.';
-
-      case 'EMOTIONAL_INTELLIGENCE':
-        return high ? 'Empathetic leader with high self-awareness, active listening, and social regulation.' :
-          low ? 'Focuses primarily on technical tasks; benefits from empathy and peer-coaching workshops.' :
-          'Constructive teammate with healthy self-awareness and situational sensitivity.';
-
-      case 'SITUATIONAL_JUDGEMENT':
-        return high ? 'Exceptional crisis triage; balances engineering ethics, customer impact, and leadership alignment.' :
-          low ? 'Tends to act unilaterally; needs guidance on stakeholder escalation paths.' :
-          'Pragmatic decision-maker in standard workplace scenarios.';
-
-      case 'COMMUNICATION_SKILLS':
-        return high ? 'Articulates technical nuances with clarity; de-escalates conflicts with constructive, candid tone.' :
-          low ? 'Direct to a fault; benefits from training on peer-review framing and diplomacy.' :
-          'Clear and effective communicator across technical and cross-functional teams.';
-
-      case 'LEARNING_AGILITY':
-        return high ? 'Fast unlearning and relearning capability; enthusiastically adapts to unexpected pivots.' :
-          low ? 'Prefers established domains; needs structured ramp-up time for new tech stacks.' :
-          'Comfortable learning new tools and methodologies within reasonable onboarding windows.';
-
-      case 'THEMATIC_APPERCEPTION':
-        return high ? 'High internal locus of control and strong Need for Achievement (nAch) with ownership mindset.' :
-          low ? 'Tends to perceive external constraints; benefits from autonomous goal-setting.' :
-          'Balanced motive profile between individual delivery and collaborative affiliation.';
-
-      default:
-        return high ? 'Advanced capability in this domain.' : 'Standard competent performance.';
+  getSectionInterpretation(assessmentId: string, section: string, pct: number): string {
+    if (pct >= 80) {
+      return `Exemplary performance (${pct}%) demonstrating mastery and high analytical precision.`;
+    } else if (pct >= 60) {
+      return `Solid operational competency (${pct}%) meeting campus engineering benchmark standards.`;
+    } else {
+      return `Developing foundational capability (${pct}%) with opportunities for targeted mentorship.`;
     }
+  },
+
+  getStrengths(assessmentId: string, pct: number): string[] {
+    if (assessmentId === 'ASM_APTITUDE') {
+      return [
+        'Robust quantitative reasoning and systematic problem decomposition',
+        'Strong inductive and deductive logical deduction under timed constraints',
+        'High analytical precision in abstract and critical thinking exercises'
+      ];
+    } else if (assessmentId === 'ASM_COMPREHENSION') {
+      return [
+        'High textual synthesis and nuanced technical documentation comprehension',
+        'Accurate extraction of foundational concepts and authorial tone',
+        'Strong vocabulary inference and critical contextual deduction'
+      ];
+    } else {
+      return [
+        'High emotional self-regulation and de-escalation in high-pressure war rooms',
+        'Collaborative cross-functional communication and constructive dissent management',
+        'Ethical decision-making and commitment to systemic quality guardrails'
+      ];
+    }
+  },
+
+  getDevelopmentAreas(assessmentId: string, pct: number): string[] {
+    if (assessmentId === 'ASM_APTITUDE') {
+      return [
+        'Accelerate speed on complex non-linear algebra and multi-tier data interpretations',
+        'Maintain consistent validation checkpoints during high-speed calculations'
+      ];
+    } else if (assessmentId === 'ASM_COMPREHENSION') {
+      return [
+        'Enhance speed on dense multidisciplinary sociotechnical texts',
+        'Distinguish nuanced counterfactual implications from direct empirical statements'
+      ];
+    } else {
+      return [
+        'Further expand comfort with ambiguous stakeholder requirements',
+        'Continuously document trade-offs asynchronously for distributed engineering squads'
+      ];
+    }
+  },
+
+  // Backward compatibility wrapper for old components
+  calculateScores(
+    attemptId: string,
+    candidateId: string,
+    questions: any[],
+    responses: Record<string, { selectedOptionId?: string; selectedAnswer?: any; value?: any; timeTaken?: number }>
+  ) {
+    const formattedResponses: Record<string, { selectedAnswer?: 'A' | 'B' | 'C' | 'D' | ''; timeTakenSeconds?: number }> = {};
+    for (const [qid, r] of Object.entries(responses)) {
+      let ans: any = r.selectedAnswer;
+      if (!ans && r.selectedOptionId) {
+        if (r.selectedOptionId.endsWith('_A')) ans = 'A';
+        else if (r.selectedOptionId.endsWith('_B')) ans = 'B';
+        else if (r.selectedOptionId.endsWith('_C')) ans = 'C';
+        else if (r.selectedOptionId.endsWith('_D')) ans = 'D';
+      }
+      formattedResponses[qid] = {
+        selectedAnswer: ans || '',
+        timeTakenSeconds: r.timeTaken || 0
+      };
+    }
+    const assessmentId = questions[0]?.Assessment_ID || 'ASM_APTITUDE';
+    return this.calculateAssessmentScore(attemptId, candidateId, assessmentId, questions, formattedResponses);
   }
 };

@@ -15,12 +15,12 @@ export const App: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(() => ApiService.getCurrentSession());
   const [portalMode, setPortalMode] = useState<'ADMIN' | 'USER'>(() => {
     const cur = ApiService.getCurrentSession();
-    return cur?.user.Role === 'ADMIN' ? 'ADMIN' : 'USER';
+    return (cur?.user.Role === 'ADMIN' || cur?.user.Role === 'SUPER_ADMIN') ? 'ADMIN' : 'USER';
   });
 
   const handleLoginSuccess = (newSession: AuthSession) => {
     setSession(newSession);
-    if (newSession.user.Role === 'ADMIN') {
+    if (newSession.user.Role === 'ADMIN' || newSession.user.Role === 'SUPER_ADMIN') {
       setPortalMode('ADMIN');
     } else {
       setPortalMode('USER');
