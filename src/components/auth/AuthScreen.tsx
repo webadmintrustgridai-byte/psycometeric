@@ -455,44 +455,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
           {/* ======================================================== */}
           {candidateMode === 'SIGN_IN' && (
             <form onSubmit={handleCandidateSignIn} className="space-y-4">
-              {/* Quick 1-Click Test Candidate Login */}
-              <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-xl flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-[11px] font-bold text-blue-950 uppercase tracking-wider">Test User Ready</span>
-                  </div>
-                  <p className="text-[11px] text-blue-800 font-medium truncate">
-                    Login with: <code className="px-1 py-0.5 bg-blue-100 rounded text-blue-900 font-mono text-[10px]">test@trustgrid.ai</code>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    setCandEmail('test@trustgrid.ai');
-                    setCandPassword('');
-                    setLoading(true);
-                    setErrorMsg(null);
-                    try {
-                      const res = ApiService.login('test@trustgrid.ai', 'CANDIDATE');
-                      if (res.success && res.session) {
-                        onLoginSuccess(res.session);
-                      } else {
-                        setErrorMsg(res.message || 'Login failed');
-                      }
-                    } catch (err: any) {
-                      setErrorMsg(err.message || 'Login failed');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all flex items-center gap-1.5 shrink-0"
-                >
-                  <span>⚡ 1-Click Test Login</span>
-                </button>
-              </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Email Address or College Roll Number

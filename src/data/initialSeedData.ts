@@ -1657,103 +1657,13 @@ export const INITIAL_QUESTIONS: Question[] = INITIAL_QUESTION_BANK.map(q => ({
 }));
 
 // =========================================================================
-// CANDIDATES INITIAL STORAGE (1 TEST CANDIDATE FOR IMMEDIATE VERCEL TESTING)
+// =========================================================================
+// CANDIDATES INITIAL STORAGE (EMPTY BY DEFAULT - REAL RECORDS TO BE ONBOARDED VIA SIGN UP)
 // =========================================================================
 
-export const TEST_CANDIDATE: Candidate = {
-  Candidate_ID: 'CAN_2026_TEST01',
-  Organization_ID: 'ORG_000001',
-  Registration_Date: '2026-01-15T09:00:00Z',
-  Full_Name: 'Test Candidate',
-  Primary_Email: 'test@trustgrid.ai',
-  Email: 'test@trustgrid.ai',
-  Mobile_Number: '+91 9876543210',
-  WhatsApp_Number: '+91 9876543210',
-  Date_of_Birth: '2004-05-15',
-  Gender: 'MALE',
-  College_Name: 'Autonomous Institute of Technology',
-  College_ID_Number: 'TEST-2026-001',
-  Degree: 'B.Tech',
-  Department: 'Computer Science and Engineering',
-  Current_Semester: 'Semester 7',
-  Academic_Year: '4th Year',
-  Registration_Status: 'APPROVED',
-  Profile_Status: 'PROFILE_COMPLETED',
-  Photograph_URL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256'
-};
-
-export const INITIAL_CANDIDATES: Candidate[] = [TEST_CANDIDATE];
-
-export const TEST_ACADEMIC_PROFILES: AcademicProfileRecord[] = [
-  {
-    Academic_Record_ID: 'ACAD_10_TEST01',
-    Candidate_ID: 'CAN_2026_TEST01',
-    Education_Level: '10TH',
-    School_or_College: 'Delhi Public School',
-    Board_or_University: 'CBSE',
-    Passing_Year: '2020',
-    Mathematics_Marks: 94,
-    Science_Marks: 92,
-    English_Marks: 90,
-    Total_Marks: 465,
-    Percentage: 93.0
-  },
-  {
-    Academic_Record_ID: 'ACAD_12_TEST01',
-    Candidate_ID: 'CAN_2026_TEST01',
-    Education_Level: '12TH',
-    School_or_College: 'National Junior College',
-    Board_or_University: 'State Board',
-    Passing_Year: '2022',
-    Mathematics_Marks: 96,
-    Physics_Marks: 94,
-    Chemistry_Marks: 90,
-    English_Marks: 88,
-    Total_Marks: 468,
-    Percentage: 93.6
-  },
-  {
-    Academic_Record_ID: 'ACAD_COL_TEST01',
-    Candidate_ID: 'CAN_2026_TEST01',
-    Education_Level: 'COLLEGE_SEMESTER',
-    School_or_College: 'Autonomous Institute of Technology',
-    Board_or_University: 'Autonomous University',
-    Passing_Year: '2026',
-    Overall_CGPA: 8.85,
-    Semester_CGPA: 8.9,
-    Backlogs: 0
-  }
-];
-
-export const TEST_ENTRANCE_EXAMS: EntranceExamRecord[] = [
-  {
-    Exam_Record_ID: 'EXM_CAN_TEST_01',
-    Candidate_ID: 'CAN_2026_TEST01',
-    Examination_Name: 'GATE',
-    Score: 785,
-    Rank: 124,
-    Percentile: 99.1,
-    Examination_Year: '2026'
-  },
-  {
-    Exam_Record_ID: 'EXM_CAN_TEST_02',
-    Candidate_ID: 'CAN_2026_TEST01',
-    Examination_Name: 'JEE_MAIN',
-    Percentile: 98.6,
-    Rank: 1420,
-    Examination_Year: '2022'
-  },
-  {
-    Exam_Record_ID: 'EXM_CAN_TEST_03',
-    Candidate_ID: 'CAN_2026_TEST01',
-    Examination_Name: 'BITSAT',
-    Score: 348,
-    Examination_Year: '2022'
-  }
-];
-
-export const INITIAL_ACADEMIC_PROFILES: AcademicProfileRecord[] = TEST_ACADEMIC_PROFILES;
-export const INITIAL_ENTRANCE_EXAMS: EntranceExamRecord[] = TEST_ENTRANCE_EXAMS;
+export const INITIAL_CANDIDATES: Candidate[] = [];
+export const INITIAL_ACADEMIC_PROFILES: AcademicProfileRecord[] = [];
+export const INITIAL_ENTRANCE_EXAMS: EntranceExamRecord[] = [];
 export const INITIAL_CANDIDATE_ACTIVITIES: CandidateActivitiesRecord[] = [];
 export const INITIAL_ASSIGNMENTS: AssessmentAssignment[] = [];
 export const INITIAL_ATTEMPTS: AssessmentAttempt[] = [];
