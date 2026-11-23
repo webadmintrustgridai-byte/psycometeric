@@ -30,6 +30,9 @@ import {
 } from '../types';
 import {
   INITIAL_CANDIDATES,
+  TEST_CANDIDATE,
+  TEST_ACADEMIC_PROFILES,
+  TEST_ENTRANCE_EXAMS,
   INITIAL_USERS,
   INITIAL_ADMIN_USERS,
   INITIAL_ASSESSMENT_MASTER,
@@ -249,19 +252,46 @@ export const ApiService = {
 
       return { success: true, session };
     } else {
-      // Candidate Login (Lookup candidates created by Administrator)
-      const candidates = this.getCandidates();
+      // Candidate Login (Lookup candidates created by Administrator or self-registered)
+      let candidates = this.getCandidates();
       let matched = candidates.find(c => 
         (c.Primary_Email && c.Primary_Email.toLowerCase() === cleanEmail) || 
         (c.Email && c.Email.toLowerCase() === cleanEmail) ||
         (c.Candidate_ID && c.Candidate_ID.toLowerCase() === cleanEmail) ||
-        (c.College_ID_Number && c.College_ID_Number.toLowerCase() === cleanEmail)
+        (c.College_ID_Number && c.College_ID_Number.toLowerCase() === cleanEmail) ||
+        (c.Full_Name && c.Full_Name.toLowerCase() === cleanEmail)
       );
+
+      // Auto-provision test candidate for immediate Vercel testing if requested or if candidates list is empty
+      const isTestLookup = 
+        cleanEmail === 'test@trustgrid.ai' || 
+        cleanEmail === 'test' || 
+        cleanEmail === 'test candidate' || 
+        cleanEmail === 'test-2026-001' || 
+        cleanEmail === 'can_2026_test01';
+
+      if (!matched && (isTestLookup || candidates.length === 0)) {
+        matched = TEST_CANDIDATE;
+        if (!candidates.some(c => c.Candidate_ID === TEST_CANDIDATE.Candidate_ID)) {
+          candidates = [TEST_CANDIDATE, ...candidates];
+          saveStorage(STORAGE_KEYS.CANDIDATES, candidates);
+        }
+        
+        // Ensure academic profile and entrance exams exist for test candidate
+        const allAcademics = loadStorage<AcademicProfileRecord[]>(STORAGE_KEYS.ACADEMIC_PROFILES, INITIAL_ACADEMIC_PROFILES);
+        if (!allAcademics.some(a => a.Candidate_ID === TEST_CANDIDATE.Candidate_ID)) {
+          saveStorage(STORAGE_KEYS.ACADEMIC_PROFILES, [...TEST_ACADEMIC_PROFILES, ...allAcademics]);
+        }
+        const allExams = loadStorage<EntranceExamRecord[]>(STORAGE_KEYS.ENTRANCE_EXAMS, INITIAL_ENTRANCE_EXAMS);
+        if (!allExams.some(e => e.Candidate_ID === TEST_CANDIDATE.Candidate_ID)) {
+          saveStorage(STORAGE_KEYS.ENTRANCE_EXAMS, [...TEST_ENTRANCE_EXAMS, ...allExams]);
+        }
+      }
 
       if (!matched) {
         return {
           success: false,
-          message: 'Candidate record not found. Please ensure your administrator (poojasri@trustgrid.ai) has registered your candidate profile.'
+          message: 'Candidate record not found. Please click Sign Up to register your profile, or use test@trustgrid.ai to test immediately.'
         };
       }
 
@@ -301,7 +331,12 @@ export const ApiService = {
   // DB_1_Candidates: CANDIDATE MANAGEMENT
   // ==========================================
   getCandidates(): Candidate[] {
-    return loadStorage<Candidate[]>(STORAGE_KEYS.CANDIDATES, INITIAL_CANDIDATES);
+    const list = loadStorage<Candidate[]>(STORAGE_KEYS.CANDIDATES, INITIAL_CANDIDATES);
+    if (!list || list.length === 0) {
+      saveStorage(STORAGE_KEYS.CANDIDATES, [TEST_CANDIDATE]);
+      return [TEST_CANDIDATE];
+    }
+    return list;
   },
 
   getCandidateById(id: string): Candidate | undefined {

@@ -1657,10 +1657,108 @@ export const INITIAL_QUESTIONS: Question[] = INITIAL_QUESTION_BANK.map(q => ({
 }));
 
 // =========================================================================
-// CANDIDATES INITIAL STORAGE (EMPTY BY DEFAULT - REAL RECORDS TO BE ONBOARDED)
+// CANDIDATES INITIAL STORAGE (1 TEST CANDIDATE FOR IMMEDIATE VERCEL TESTING)
 // =========================================================================
 
-export const INITIAL_CANDIDATES: Candidate[] = [];
+export const TEST_CANDIDATE: Candidate = {
+  Candidate_ID: 'CAN_2026_TEST01',
+  Organization_ID: 'ORG_000001',
+  Registration_Date: '2026-01-15T09:00:00Z',
+  Full_Name: 'Test Candidate',
+  Primary_Email: 'test@trustgrid.ai',
+  Email: 'test@trustgrid.ai',
+  Mobile_Number: '+91 9876543210',
+  WhatsApp_Number: '+91 9876543210',
+  Date_of_Birth: '2004-05-15',
+  Gender: 'MALE',
+  College_Name: 'Autonomous Institute of Technology',
+  College_ID_Number: 'TEST-2026-001',
+  Degree: 'B.Tech',
+  Department: 'Computer Science and Engineering',
+  Current_Semester: 'Semester 7',
+  Academic_Year: '4th Year',
+  Registration_Status: 'APPROVED',
+  Profile_Status: 'PROFILE_COMPLETED',
+  Photograph_URL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256'
+};
+
+export const INITIAL_CANDIDATES: Candidate[] = [TEST_CANDIDATE];
+
+export const TEST_ACADEMIC_PROFILES: AcademicProfileRecord[] = [
+  {
+    Academic_Record_ID: 'ACAD_10_TEST01',
+    Candidate_ID: 'CAN_2026_TEST01',
+    Education_Level: '10TH',
+    School_or_College: 'Delhi Public School',
+    Board_or_University: 'CBSE',
+    Passing_Year: '2020',
+    Mathematics_Marks: 94,
+    Science_Marks: 92,
+    English_Marks: 90,
+    Total_Marks: 465,
+    Percentage: 93.0
+  },
+  {
+    Academic_Record_ID: 'ACAD_12_TEST01',
+    Candidate_ID: 'CAN_2026_TEST01',
+    Education_Level: '12TH',
+    School_or_College: 'National Junior College',
+    Board_or_University: 'State Board',
+    Passing_Year: '2022',
+    Mathematics_Marks: 96,
+    Physics_Marks: 94,
+    Chemistry_Marks: 90,
+    English_Marks: 88,
+    Total_Marks: 468,
+    Percentage: 93.6
+  },
+  {
+    Academic_Record_ID: 'ACAD_COL_TEST01',
+    Candidate_ID: 'CAN_2026_TEST01',
+    Education_Level: 'COLLEGE_SEMESTER',
+    School_or_College: 'Autonomous Institute of Technology',
+    Board_or_University: 'Autonomous University',
+    Passing_Year: '2026',
+    Overall_CGPA: 8.85,
+    Semester_CGPA: 8.9,
+    Backlogs: 0
+  }
+];
+
+export const TEST_ENTRANCE_EXAMS: EntranceExamRecord[] = [
+  {
+    Exam_Record_ID: 'EXM_CAN_TEST_01',
+    Candidate_ID: 'CAN_2026_TEST01',
+    Examination_Name: 'GATE',
+    Score: 785,
+    Rank: 124,
+    Percentile: 99.1,
+    Examination_Year: '2026'
+  },
+  {
+    Exam_Record_ID: 'EXM_CAN_TEST_02',
+    Candidate_ID: 'CAN_2026_TEST01',
+    Examination_Name: 'JEE_MAIN',
+    Percentile: 98.6,
+    Rank: 1420,
+    Examination_Year: '2022'
+  },
+  {
+    Exam_Record_ID: 'EXM_CAN_TEST_03',
+    Candidate_ID: 'CAN_2026_TEST01',
+    Examination_Name: 'BITSAT',
+    Score: 348,
+    Examination_Year: '2022'
+  }
+];
+
+export const INITIAL_ACADEMIC_PROFILES: AcademicProfileRecord[] = TEST_ACADEMIC_PROFILES;
+export const INITIAL_ENTRANCE_EXAMS: EntranceExamRecord[] = TEST_ENTRANCE_EXAMS;
+export const INITIAL_CANDIDATE_ACTIVITIES: CandidateActivitiesRecord[] = [];
+export const INITIAL_ASSIGNMENTS: AssessmentAssignment[] = [];
+export const INITIAL_ATTEMPTS: AssessmentAttempt[] = [];
+export const INITIAL_SCORES: any[] = [];
+export const INITIAL_FINAL_REPORTS: any[] = [];
 
 export const COMPREHENSION_PASSAGES: Record<string, { id: string; title: string; wordCount: number; standard: string; text: string }> = {
   PAS_01: {
@@ -1685,11 +1783,3 @@ export const COMPREHENSION_PASSAGES: Record<string, { id: string; title: string;
     text: "[¶1] In high-velocity, safety-critical sociotechnical systems—such as nuclear power generation, aerospace flight control, intensive care trauma medicine, and enterprise cyber incident command—operational efficacy depends entirely upon human decision-making under acute cognitive duress. Classical decision theory, rooted in normative economics, posited the ideal human operator as an unbounded rational agent: an entity capable of evaluating exhaustive state spaces, computing subjective expected utilities with dispassionate mathematical rigor, and executing optimal probability-weighted choices. Over the past five decades, however, pioneering empirical investigations in neurobiology, behavioral economics, and human factors engineering have dismantled this rationalist fiction. The human brain is not a general-purpose Turing machine; it is an evolved biological organ whose cognitive throughput is subject to severe evolutionary constraints, neurochemical bottlenecks, and acute affective dysregulation when confronted with existential stress, temporal compression, and information saturation.\n\n[¶2] The physiological foundation of decision-making under stress is grounded in the functional dichotomy popularized by Daniel Kahneman and Amos Tversky as Dual-Process Theory: System 1 (fast, automatic, stereotypic, affective, and computationally cheap) and System 2 (slow, deliberative, logical, effortful, and metabolically expensive). Under baseline physiological equilibrium, the prefrontal cortex (PFC)—specifically the dorsolateral prefrontal cortex (dlPFC)—exercises robust top-down executive control, actively suppressing impulsive subcortical impulses, sustaining working memory buffers, and orchestrating complex counterfactual problem-solving. However, when an unexpected catastrophic anomaly occurs—such as a reactor coolant loss, an uncontained cyber breach of sovereign infrastructure, or an in-flight dual engine flameout—the human organism undergoes an instantaneous neurochemical cascade known as the acute sympathetic-adrenomedullary (SAM) and hypothalamic-pituitary-adrenal (HPA) surge.\n\n[¶3] The immediate consequence of this autonomic surge is a flood of catecholamines (norepinephrine and dopamine) and glucocorticoids (cortisol) across the neocortex. While moderate catecholamine concentrations optimize prefrontal cognitive performance, severe acute stress causes massive hyper-activation of alpha-1 and beta adrenergic receptors, triggering a rapid, functional decoupling of the dorsolateral prefrontal cortex. In essence, the modern evolutionary apparatus of abstract rational deliberation goes offline. Simultaneously, subcortical structures—most prominently the amygdala, the locus coeruleus, and the basal ganglia—seize bottom-up control of the attentional apparatus. This survival mechanism, exquisitely tuned by natural selection to flee predatory predators on the Pleistocene savannah, is catastrophically ill-suited to diagnosing non-linear software bugs or adjusting radioactive valve telemetry.\n\n[¶4] Under this neurochemical hijack, operators inevitably succumb to acute cognitive degradation characterized by three interconnected failure modes: attentional tunneling, confirmation bias, and the catastrophic \"plan-continuation fallacy.\" Attentional tunneling (or perceptual narrowing) restricts the operator’s perceptual field: auditory exclusion occurs, peripheral telemetry displays are ignored, and the operator fixates compulsively on a single diagnostic instrument to the total exclusion of holistic system health. Simultaneously, working memory capacity collapses from the standard seven-plus-or-minus-two chunks to a precarious two or three items, rendering complex mental simulations of failure modes impossible. Under these degraded conditions, confirmation bias asserts visceral dominance: the panicked operator seizes upon the earliest plausible diagnostic hypothesis and systematically filters all subsequent contradictory sensor readings as instrumental noise or anomalous glitches. This culminates in the plan-continuation fallacy—an irrational, obsessive commitment to persist with an initial operational course of action despite mounting, unequivocal empirical evidence that the situation has fundamentally metastasized into an unrecoverable failure state.\n\n[¶5] In response to these pervasive biological vulnerabilities, pioneering organizational sociologists Karl Weick and Kathleen Sutcliffe developed the paradigm of High-Reliability Organizations (HROs). HROs are enterprises—such as United States naval nuclear aircraft carriers, air traffic control centers, and chemical synthesis plants—that operate continuously under conditions of immense complexity, extreme hazard, and severe temporal pressure, yet manage to experience vastly fewer catastrophic accidents than statistical risk models predict. The foundational premise of HRO theory is the categorical rejection of human infallibility. Rather than attempting to reprogram the biological limitations of the human brain through superficial motivational slogans, HROs engineer structural, sociological, and architectural defenses that accommodate biological frailties and cultivate systemic mindfulness.\n\n[¶6] HRO doctrine is operationalized through five core sociological principles: preoccupation with failure, reluctance to simplify interpretations, sensitivity to operations, commitment to resilience, and deference to expertise. Preoccupation with failure demands that every near-miss, minor telemetry discrepancy, or procedural ambiguity be treated not as evidence of operational success, but as a critical symptom of latent systemic degradation. Reluctance to simplify interpretations requires teams to reject simplistic root-cause narratives (such as attributing a system failure entirely to \"human error\") and instead investigate the tangled multi-variable interactions between interface ergonomics, software automation, organizational incentives, and sleep deprivation. Most crucially, deference to expertise mandates that during an acute crisis, the rigid bureaucratic hierarchy collapses: decision-making authority migrates instantaneously from high-ranking administrative executives to the front-line operator—regardless of rank or seniority—who possesses the deepest technical domain expertise regarding the failing subsystem.\n\n[¶7] The institutional sustainability of High-Reliability Organizations is fundamentally anchored in the concept of psychological safety, established through the pioneering scholarship of Harvard Business School professor Amy Edmondson. In a toxic or blame-oriented corporate hierarchy, operators who observe anomalies, voice safety concerns, or admit personal oversights face immediate administrative humiliation, career reprisal, or termination. Under such coercive conditions, fear reinforces the amygdalar threat response, incentivizing engineers and operators to conceal minor irregularities and falsify compliance metrics until latent flaws accumulate into an catastrophic, irreversible disaster. Conversely, in an organization characterized by profound psychological safety, admitting a mistake or raising a dissenting operational opinion is recognized as a vital act of civic and systemic stewardship. Systematic blameless post-mortems transform catastrophic failures into collective organizational learning.\n\n[¶8] The systemic degradation of operational safety is further compounded by the sociological pathology identified by Diane Vaughan as the \"normalization of deviance.\" In complex technological enterprises, systems frequently encounter minor procedural non-compliance or unexpected operational deviations that do not immediately precipitate catastrophic failure. Over time, as repeated violations yield no adverse consequences, the organization gradually redefines these hazardous anomalies as normal operational baselines. The safety margin is incrementally eroded until an unexpected confluence of environmental factors triggers systemic collapse—a trajectory meticulously documented in the loss of space shuttles Challenger and Columbia, as well as major contemporary cloud outage retrospectives. In an enterprise that has normalized deviance, operators do not perceive themselves as taking dangerous shortcuts; rather, they believe they are adhering to pragmatic engineering conventions, blinded by cultural acclimation to latent operational hazards.\n\n[¶9] Systems engineering must also confront the acute ergonomic hazards of alarm flooding and sensory modality saturation in modern human-machine interfaces. In complex automated environments—such as petrochemical control rooms, hospital intensive care units, and cloud network operations centers (NOCs)—the onset of a major operational anomaly frequently triggers thousands of concurrent audiovisual alerts within minutes. When subjected to this sensory barrage, operators experience acute \"alarm fatigue\": the acoustic sensory channel becomes overwhelmed, cognitive habituation sets in, and operators reflexively silence or acknowledge alarms without reading their contents. Human factors engineering demonstrates that sensory telemetry must be hierarchical, multisensory, and context-aware. Critical alarms must employ distinct chromatic contrasts, spatialized directional audio cues, and tactile haptic feedback to prevent perceptual saturation and ensure that life-critical indicators pierce through cognitive tunneling.\n\n[¶10] A seminal operational framework designed to mitigate cognitive degradation is Crew Resource Management (CRM), pioneered by NASA and the Federal Aviation Administration in response to tragic commercial aviation disasters in the late twentieth century. Prior to CRM, cockpits operated under rigid authoritarian command structures where junior first officers were sociologically intimidated from challenging captain errors, even when observing catastrophic navigational deviations. CRM revolutionized operational doctrine by formalizing non-punitive communicative protocols, standardized call-outs, two-challenge rules, and the \"sterile cockpit\" mandate—prohibiting non-essential communication during critical flight phases. By flattening the sociological hierarchy and equipping junior personnel with explicit conversational algorithms to assert safety interventions, CRM transformed flight crews from isolated individuals into resilient, self-correcting cognitive teams.\n\n[¶11] Finally, systems engineers must confront what human factors pioneer Lisanne Bainbridge termed the \"Ironies of Automation.\" As designers incorporate increasingly sophisticated automated algorithms into industrial control loops, they mistakenly believe they are removing the fallible human operator from the risk equation. In reality, automation merely alters the nature of human responsibility: the operator is transformed from an active manual controller into a passive monitor of automated systems. However, human vigilance degrades precipitously when monitoring passive displays over extended durations. When an unprecedented edge case occurs that the software cannot resolve, the system abruptly disengages and hands absolute control back to an unalert, cognitively detached human operator who must instantaneously assimilate complex telemetry, reconstruct lost situational awareness, and execute life-or-death decisions under peak stress. True sociotechnical engineering excellence therefore lies not in the total elimination of the human factor, but in the harmonious, telematic integration of human judgment with machine computational speed, designing systems that support human neurobiology rather than demanding its biological transcendence.\n\n[¶12] In conclusion, resilient systems engineering requires a profound paradigm shift from viewing human beings as operational liabilities to recognizing them as the primary source of adaptive resilience in volatile environments. Machines excel at rigid, deterministic execution across known, codified state spaces; humans excel at creative abduction, contextual pattern recognition, and heuristic improvisation when confronted with unprecedented systemic shocks. By designing cognitive interfaces that respect neurobiological constraints, fostering psychological safety that uncovers latent vulnerabilities, and engineering socio-technical workflows that distribute authority according to real-time expertise, organizations can build operational infrastructures capable of enduring extreme complexity without catastrophic failure."
   }
 };
-
-export const INITIAL_ACADEMIC_PROFILES: AcademicProfileRecord[] = [];
-export const INITIAL_ENTRANCE_EXAMS: EntranceExamRecord[] = [];
-export const INITIAL_CANDIDATE_ACTIVITIES: CandidateActivitiesRecord[] = [];
-export const INITIAL_ASSIGNMENTS: AssessmentAssignment[] = [];
-export const INITIAL_ATTEMPTS: AssessmentAttempt[] = [];
-export const INITIAL_SCORES: any[] = [];
-export const INITIAL_FINAL_REPORTS: any[] = [];

@@ -170,10 +170,12 @@ function handleRequest(e, method) {
       // --- CANDIDATE OPERATIONS (DEDUPLICATION-SAFE) ---
       case 'createCandidate':
       case 'saveCandidate':
+      case 'registerCandidate':
         responseData = saveCandidateRecord(ss, payload.candidate || payload);
         break;
 
       case 'updateCandidate':
+      case 'updateCandidateProfile':
         responseData = updateCandidateRecord(ss, payload.candidate || payload);
         break;
 
@@ -186,10 +188,12 @@ function handleRequest(e, method) {
         break;
 
       case 'saveAcademicProfiles':
+      case 'saveAcademicProfile':
         responseData = saveAcademicProfileRecords(ss, payload);
         break;
 
       case 'saveEntranceExams':
+      case 'saveEntranceExamDetails':
         responseData = saveEntranceExamRecords(ss, payload);
         break;
 
@@ -237,10 +241,12 @@ function handleRequest(e, method) {
         break;
 
       case 'startAssessmentAttempt':
+      case 'startAssessment':
         responseData = startAssessmentAttemptRecord(ss, payload.attempt || payload);
         break;
 
       case 'saveResponse':
+      case 'saveAssessmentResponse':
         responseData = saveAssessmentResponseRecord(ss, payload.response || payload);
         break;
 
