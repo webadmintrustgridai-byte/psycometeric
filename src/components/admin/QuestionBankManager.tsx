@@ -26,6 +26,7 @@ import {
 export const QuestionBankManager: React.FC = () => {
   const [questions, setQuestions] = useState<QuestionBankItem[]>(() => ApiService.getQuestionBank());
   const [selectedAssessment, setSelectedAssessment] = useState<string>('ALL');
+  const [selectedSet, setSelectedSet] = useState<string>('ALL');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -53,12 +54,13 @@ export const QuestionBankManager: React.FC = () => {
   // Filtered Questions
   const filteredQuestions = questions.filter(q => {
     const matchesAsm = selectedAssessment === 'ALL' || q.Assessment_ID === selectedAssessment;
+    const matchesSet = selectedSet === 'ALL' || (q.Set_Code || 'SET_A') === selectedSet;
     const matchesDiff = selectedDifficulty === 'ALL' || q.Difficulty_Level === selectedDifficulty;
     const matchesSearch =
       q.Question_Text.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.Section_Name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.Question_ID.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesAsm && matchesDiff && matchesSearch;
+    return matchesAsm && matchesSet && matchesDiff && matchesSearch;
   });
 
   const handleOpenCreate = () => {
@@ -297,10 +299,21 @@ export const QuestionBankManager: React.FC = () => {
           onChange={e => setSelectedAssessment(e.target.value)}
           className="px-3 py-2 text-xs rounded-xl border border-slate-300 font-medium text-slate-700"
         >
-          <option value="ALL">All Assessments (90 Qs)</option>
-          <option value="ASM_APTITUDE">Assessment 1: Aptitude (30 Qs)</option>
-          <option value="ASM_COMPREHENSION">Assessment 2: Comprehension (30 Qs)</option>
-          <option value="ASM_EI_SITUATIONAL">Assessment 3: EI & Situational (30 Qs)</option>
+          <option value="ALL">All Assessments (270 Qs)</option>
+          <option value="ASM_APTITUDE">Assessment 1: Aptitude (90 Qs)</option>
+          <option value="ASM_COMPREHENSION">Assessment 2: Comprehension (90 Qs)</option>
+          <option value="ASM_EI_SITUATIONAL">Assessment 3: EI & Situational (90 Qs)</option>
+        </select>
+
+        <select
+          value={selectedSet}
+          onChange={e => setSelectedSet(e.target.value)}
+          className="px-3 py-2 text-xs rounded-xl border border-slate-300 font-black text-slate-800 bg-white"
+        >
+          <option value="ALL">All Sets (SET A, B, C)</option>
+          <option value="SET_A">SET A (90 Qs)</option>
+          <option value="SET_B">SET B (90 Qs)</option>
+          <option value="SET_C">SET C (90 Qs)</option>
         </select>
 
         <select
@@ -318,7 +331,7 @@ export const QuestionBankManager: React.FC = () => {
       {/* Questions List */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500 font-bold">
-          <span>Showing {filteredQuestions.length} Questions</span>
+          <span>Showing {filteredQuestions.length} Questions (GATE & CAT Standard)</span>
           <span>1 Mark per Question • Server-Authoritative Answer Key</span>
         </div>
 
@@ -329,6 +342,9 @@ export const QuestionBankManager: React.FC = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                     {q.Question_ID}
+                  </span>
+                  <span className="text-[10px] font-black text-purple-900 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
+                    {q.Set_Code === 'SET_B' ? 'SET B' : q.Set_Code === 'SET_C' ? 'SET C' : 'SET A'}
                   </span>
                   <span className="text-[11px] font-bold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
                     {q.Assessment_ID.replace('ASM_', '')}

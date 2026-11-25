@@ -382,7 +382,7 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black text-slate-900">{assessmentMaster.Assessment_Name}</h2>
               <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-900 border border-blue-200">
-                Paper: {activeSet === 'SET_A' ? 'Set A' : activeSet === 'SET_B' ? 'Set B' : 'Set C'}
+                Paper: {activeSet === 'SET_A' ? 'SET A' : activeSet === 'SET_B' ? 'SET B' : 'SET C'}
               </span>
               {isComprehension && (
                 <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${currentTheme.badge}`}>

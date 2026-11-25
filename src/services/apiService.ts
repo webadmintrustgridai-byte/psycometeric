@@ -51,7 +51,7 @@ const STORAGE_KEYS = {
   ACTIVITIES: 'tg_db_3_activities_v5',
   ENTRANCE_EXAMS: 'tg_db_4_entrance_exams_v5',
   ASSESSMENTS: 'tg_db_5_assessments_v5',
-  QUESTIONS: 'tg_db_6_questions_v5',
+  QUESTIONS: 'tg_db_6_questions_v7',
   ASSIGNMENTS: 'tg_db_7_assignments_v5',
   ATTEMPTS: 'tg_db_8_attempts_v5',
   RESPONSES: 'tg_db_9_responses_v5',
@@ -865,17 +865,28 @@ export const ApiService = {
   },
 
   getQuestionBank(assessmentId?: string, setCode?: QuestionSetCode): QuestionBankItem[] {
-    const all = loadStorage<QuestionBankItem[]>(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTION_BANK);
+    let all = loadStorage<QuestionBankItem[]>(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTION_BANK);
+    // Ensure all 270 questions across SET_A, SET_B, and SET_C are always loaded
+    if (!all || all.length < INITIAL_QUESTION_BANK.length || !all.some(q => q.Set_Code === 'SET_B') || !all.some(q => q.Set_Code === 'SET_C')) {
+      all = INITIAL_QUESTION_BANK;
+      saveStorage(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTION_BANK);
+    }
+    const targetSet = setCode || 'SET_A';
     if (!assessmentId || assessmentId === 'ALL') {
       if (setCode) return all.filter(q => (q.Set_Code || 'SET_A') === setCode);
       return all;
     }
-    return all.filter(q => {
+    const filtered = all.filter(q => {
       const matchAsm = q.Assessment_ID === assessmentId;
       if (!matchAsm) return false;
-      if (!setCode) return true;
-      return (q.Set_Code || 'SET_A') === setCode;
+      return (q.Set_Code || 'SET_A') === targetSet;
     });
+
+    // Fallback safeguard: if filtered is empty, return all questions for this assessment so user is never blocked
+    if (filtered.length === 0) {
+      return all.filter(q => q.Assessment_ID === assessmentId);
+    }
+    return filtered;
   },
 
   createQuestion(question: QuestionBankItem): QuestionBankItem {

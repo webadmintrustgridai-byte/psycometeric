@@ -1772,37 +1772,38 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
               </ul>
             </div>
 
-            {/* Question Set Selection (Set A, Set B, Set C) */}
+            {/* Question Set Selection (SET A, SET B, SET C) */}
             <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-200 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-blue-950 uppercase tracking-wide">
                   Select Question Paper Set
                 </span>
                 <span className="text-[10px] font-black bg-blue-900 text-white px-2.5 py-0.5 rounded-full">
-                  {selectedSetCode === 'SET_A' ? 'Set A (Core)' : selectedSetCode === 'SET_B' ? 'Set B (Advanced)' : 'Set C (Mastery)'} Active
+                  {selectedSetCode === 'SET_A' ? 'SET A' : selectedSetCode === 'SET_B' ? 'SET B' : 'SET C'} Active
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 leading-normal">
-                3 distinct question paper sets are available. Each set provides 30 dedicated questions with CAT/GMAT/Bank PO standards and 1,500+ word comprehension passages.
+                Choose your question set. All 3 sets feature authentic GATE & CAT standard quantitative, comprehension (1,500+ words), and situational judgment questions.
               </p>
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {(['SET_A', 'SET_B', 'SET_C'] as QuestionSetCode[]).map(code => {
                   const isSel = selectedSetCode === code;
-                  const label = code === 'SET_A' ? 'Set A (Core)' : code === 'SET_B' ? 'Set B (Alt)' : 'Set C (Alt)';
-                  const subtext = code === 'SET_A' ? '30 Questions' : code === 'SET_B' ? '30 Questions' : '30 Questions';
+                  const label = code === 'SET_A' ? 'SET A' : code === 'SET_B' ? 'SET B' : 'SET C';
                   return (
                     <button
                       key={code}
                       type="button"
                       onClick={() => setSelectedSetCode(code)}
-                      className={`p-2.5 rounded-xl text-center border transition-all ${
+                      className={`p-3 rounded-xl text-center border transition-all ${
                         isSel
                           ? 'bg-blue-900 text-white border-blue-900 shadow-md ring-2 ring-blue-500/20'
                           : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="text-xs font-black">{label}</div>
-                      <div className={`text-[10px] ${isSel ? 'text-blue-200 font-medium' : 'text-slate-400'}`}>{subtext}</div>
+                      <div className="text-sm font-black tracking-wide">{label}</div>
+                      <div className={`text-[10px] mt-0.5 ${isSel ? 'text-blue-200 font-semibold' : 'text-slate-500'}`}>
+                        GATE & CAT • 30 Qs
+                      </div>
                     </button>
                   );
                 })}
