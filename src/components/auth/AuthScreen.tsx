@@ -91,16 +91,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
     percentage12th: 93.0,
     passingYear12th: '2022',
 
-    // Step 5: Entrance Exams (JEE, BITSAT, GATE)
+    // Step 5: Entrance Exams (BITSAT, IIT-JEE, GATE, GMAT, CAT - All Optional)
     gateScore: '',
     gatePercentile: '',
     gateRank: '',
-    gateYear: '2026',
+    gateYear: '',
     jeePercentile: '',
     jeeRank: '',
-    jeeYear: '2022',
+    jeeYear: '',
     bitsatScore: '',
-    bitsatYear: '2022'
+    bitsatYear: '',
+    catPercentile: '',
+    catScore: '',
+    catYear: '',
+    gmatScore: '',
+    gmatPercentile: '',
+    gmatYear: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -260,7 +266,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
           jeeRank: signUpData.jeeRank ? Number(signUpData.jeeRank) : undefined,
           jeeYear: signUpData.jeeYear,
           bitsatScore: signUpData.bitsatScore ? Number(signUpData.bitsatScore) : undefined,
-          bitsatYear: signUpData.bitsatYear
+          bitsatYear: signUpData.bitsatYear || undefined,
+          catPercentile: signUpData.catPercentile ? Number(signUpData.catPercentile) : undefined,
+          catScore: signUpData.catScore ? Number(signUpData.catScore) : undefined,
+          catYear: signUpData.catYear || undefined,
+          gmatScore: signUpData.gmatScore ? Number(signUpData.gmatScore) : undefined,
+          gmatPercentile: signUpData.gmatPercentile ? Number(signUpData.gmatPercentile) : undefined,
+          gmatYear: signUpData.gmatYear || undefined
         });
 
         if (res.success && res.session) {
@@ -946,24 +958,34 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                   </div>
                 )}
 
-                {/* STEP 5: NATIONAL ENTRANCE EXAMS (GATE, JEE, BITSAT) */}
+                {/* STEP 5: NATIONAL & GLOBAL COMPETITIVE EXAMS (BITSAT, IIT-JEE, GATE, GMAT, CAT - ALL 100% OPTIONAL) */}
                 {signUpStep === 5 && (
                   <div className="space-y-4 animate-in fade-in">
-                    <div className="border-b border-slate-100 pb-2">
-                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                        <Award className="w-4 h-4 text-emerald-600" />
-                        <span>Step 5: National Entrance Examinations (JEE, BITSAT & GATE Score)</span>
-                      </h3>
-                      <p className="text-[11px] text-slate-500">Provide any competitive exam scores (Optional but recommended)</p>
+                    <div className="border-b border-slate-100 pb-2 flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                          <Award className="w-4 h-4 text-emerald-600" />
+                          <span>Step 5: Competitive Examinations (BITSAT, IIT-JEE, GATE, GMAT, CAT)</span>
+                        </h3>
+                        <p className="text-[11px] text-slate-500">
+                          All exam entries are <strong className="text-emerald-700">100% Optional</strong>. Leave blank if you have not appeared.
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-200">
+                        Optional Section
+                      </span>
                     </div>
 
-                    <div className="space-y-4">
-                      {/* GATE Section */}
+                    <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
+                      {/* 1. GATE Section */}
                       <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                        <span className="text-xs font-bold text-slate-900 block">Graduate Aptitude Test in Engineering (GATE)</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-900">1. GATE (Graduate Aptitude Test in Engineering)</span>
+                          <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           <div>
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">GATE Score (out of 1000)</label>
+                            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Score (out of 1000)</label>
                             <input
                               type="number"
                               value={signUpData.gateScore}
@@ -973,7 +995,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                             />
                           </div>
                           <div>
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">All India Rank (AIR)</label>
+                            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">All India Rank (AIR)</label>
                             <input
                               type="number"
                               value={signUpData.gateRank}
@@ -983,22 +1005,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                             />
                           </div>
                           <div>
-                            <label className="block text-[11px] font-medium text-slate-600 mb-1">Exam Year</label>
+                            <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Exam Year</label>
                             <input
                               type="text"
                               value={signUpData.gateYear}
                               onChange={e => handleFieldChange('gateYear', e.target.value)}
                               className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300"
-                              placeholder="2026"
+                              placeholder="e.g. 2026"
                             />
                           </div>
                         </div>
                       </div>
 
-                      {/* JEE & BITSAT Section */}
+                      {/* 2. IIT-JEE & 3. BITSAT Section */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                          <span className="text-xs font-bold text-slate-900 block">JEE Main / Advanced</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-900">2. IIT - JEE (Main / Adv)</span>
+                            <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                          </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="block text-[11px] text-slate-600 mb-0.5">Percentile</label>
@@ -1008,7 +1033,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                                 value={signUpData.jeePercentile}
                                 onChange={e => handleFieldChange('jeePercentile', e.target.value)}
                                 className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
-                                placeholder="99.2"
+                                placeholder="e.g. 99.2"
                               />
                             </div>
                             <div>
@@ -1018,14 +1043,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                                 value={signUpData.jeeRank}
                                 onChange={e => handleFieldChange('jeeRank', e.target.value)}
                                 className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
-                                placeholder="1850"
+                                placeholder="e.g. 1850"
                               />
                             </div>
                           </div>
                         </div>
 
                         <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                          <span className="text-xs font-bold text-slate-900 block">BITSAT Score</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-900">3. BITSAT Score</span>
+                            <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                          </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <label className="block text-[11px] text-slate-600 mb-0.5">Score (out of 390)</label>
@@ -1034,7 +1062,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                                 value={signUpData.bitsatScore}
                                 onChange={e => handleFieldChange('bitsatScore', e.target.value)}
                                 className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
-                                placeholder="325"
+                                placeholder="e.g. 325"
                               />
                             </div>
                             <div>
@@ -1044,12 +1072,76 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
                                 value={signUpData.bitsatYear}
                                 onChange={e => handleFieldChange('bitsatYear', e.target.value)}
                                 className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
-                                placeholder="2022"
+                                placeholder="e.g. 2022"
                               />
                             </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* 4. CAT & 5. GMAT Section */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-900">4. CAT (Common Admission Test)</span>
+                            <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[11px] text-slate-600 mb-0.5">Percentile (%)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={signUpData.catPercentile}
+                                onChange={e => handleFieldChange('catPercentile', e.target.value)}
+                                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                                placeholder="e.g. 98.75"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-slate-600 mb-0.5">Raw / Scaled Score</label>
+                              <input
+                                type="number"
+                                value={signUpData.catScore}
+                                onChange={e => handleFieldChange('catScore', e.target.value)}
+                                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                                placeholder="e.g. 96"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-900">5. GMAT Score</span>
+                            <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[11px] text-slate-600 mb-0.5">Total Score (out of 800)</label>
+                              <input
+                                type="number"
+                                value={signUpData.gmatScore}
+                                onChange={e => handleFieldChange('gmatScore', e.target.value)}
+                                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                                placeholder="e.g. 730"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-slate-600 mb-0.5">Percentile (%)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={signUpData.gmatPercentile}
+                                onChange={e => handleFieldChange('gmatPercentile', e.target.value)}
+                                className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-slate-300"
+                                placeholder="e.g. 96.0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 )}

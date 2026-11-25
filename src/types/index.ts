@@ -170,12 +170,14 @@ export interface CandidateActivitiesRecord {
 }
 
 // ==========================================
-// DB_4_Entrance_Exams: JEE, BITSAT & OTHERS
+// DB_4_Entrance_Exams: JEE, BITSAT, GATE, CAT, GMAT & OTHERS
 // ==========================================
+export type EntranceExamType = 'JEE_MAIN' | 'JEE_ADVANCED' | 'BITSAT' | 'STATE_CET' | 'GATE' | 'CAT' | 'GMAT' | 'OTHER';
+
 export interface EntranceExamRecord {
   Exam_Record_ID: string;
   Candidate_ID: string;
-  Examination_Name: 'JEE_MAIN' | 'JEE_ADVANCED' | 'BITSAT' | 'STATE_CET' | 'GATE' | 'OTHER';
+  Examination_Name: EntranceExamType;
   Examination_Year: string;
   Score?: number;
   Percentile?: number;
@@ -203,16 +205,18 @@ export interface AssessmentMaster {
 }
 
 // ==========================================
-// DB_6_Question_Bank: 30 QUESTIONS PER ASSESSMENT
+// DB_6_Question_Bank: 30 QUESTIONS PER SET (SETS A, B, C)
 // ==========================================
 export type DifficultyLevel = 'EASY' | 'MEDIUM' | 'DIFFICULT';
+export type QuestionSetCode = 'SET_A' | 'SET_B' | 'SET_C';
 
 export interface QuestionBankItem {
   Question_ID: string;
   Assessment_ID: string; // 'ASM_APTITUDE' | 'ASM_COMPREHENSION' | 'ASM_EI_SITUATIONAL'
+  Set_Code?: QuestionSetCode; // 'SET_A' | 'SET_B' | 'SET_C'
   Section_Name: string;
   Passage_ID?: string;       // For Assessment 2: Comprehension passage grouping (P1, P2, P3)
-  Passage_Text?: string;     // The reading passage text
+  Passage_Text?: string;     // The reading passage text (strictly 1,500 - 3,000 words)
   Situation_ID?: string;     // For Assessment 3: Situation grouping (S1..S6)
   Situation_Text?: string;   // The workplace scenario text
   Question_Text: string;
@@ -242,6 +246,7 @@ export interface Question {
   Options?: QuestionOption[];
   // Extended fields from QuestionBankItem
   Assessment_ID?: string;
+  Set_Code?: QuestionSetCode;
   Section_Name?: string;
   Passage_ID?: string;
   Passage_Text?: string;
@@ -269,6 +274,7 @@ export interface AssessmentAssignment {
   Assignment_ID: string;
   Candidate_ID: string;
   Assessment_ID: string;
+  Set_Code?: QuestionSetCode; // Specific question set (SET_A, SET_B, SET_C)
   Scheduled_Date: string; // 'YYYY-MM-DD'
   Scheduled_Start_Time: string; // 'HH:MM'
   Duration_Minutes: number;
@@ -298,6 +304,7 @@ export interface AssessmentAttempt {
   Attempt_ID: string;
   Candidate_ID: string;
   Assessment_ID: string;
+  Set_Code?: QuestionSetCode; // Track which set was assigned/attempted
   Start_Timestamp: string;
   End_Timestamp?: string;
   End_Timestamp_Deadline: string; // Server deadline for countdown and auto-submission

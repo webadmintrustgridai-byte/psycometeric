@@ -14,7 +14,8 @@ import {
   AssessmentAssignment,
   AssessmentAttempt,
   CONSOLIDATED_ASSESSMENTS,
-  AssessmentType
+  AssessmentType,
+  QuestionSetCode
 } from '../../types';
 import { ApiService } from '../../services/apiService';
 import { PsychometricTestStation } from './PsychometricTestStation';
@@ -94,6 +95,7 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
 
   const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ACADEMIC_PROFILE' | 'ACTIVITIES_DOCS' | 'VIDEO_PROFILE' | 'TEST_STATION' | 'RESULTS'>('DASHBOARD');
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('ASM_APTITUDE');
+  const [selectedSetCode, setSelectedSetCode] = useState<QuestionSetCode>('SET_A');
   const [showInstructionsModal, setShowInstructionsModal] = useState<AssessmentMaster | null>(null);
   const [isSavedInDb, setIsSavedInDb] = useState(false);
 
@@ -146,23 +148,31 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
   const [backlogs, setBacklogs] = useState<number>(recCol?.Backlogs || 0);
   const [arrearsHistory, setArrearsHistory] = useState<string>(recCol?.Arrears_History || 'Nil');
 
-  // Entrance Exams State (JEE, BITSAT & GATE Score)
+  // Entrance Exams State (JEE, BITSAT, GATE, CAT, GMAT - ALL OPTIONAL)
   const initialExams = ApiService.getEntranceExams(candidate?.Candidate_ID || '');
   const jeeInit = initialExams.find(e => e.Examination_Name === 'JEE_MAIN' || e.Examination_Name === 'JEE_ADVANCED');
   const bitsatInit = initialExams.find(e => e.Examination_Name === 'BITSAT');
   const gateInit = initialExams.find(e => e.Examination_Name === 'GATE');
+  const catInit = initialExams.find(e => e.Examination_Name === 'CAT');
+  const gmatInit = initialExams.find(e => e.Examination_Name === 'GMAT');
 
-  const [jeeScore, setJeeScore] = useState<string>(jeeInit?.Score ? String(jeeInit.Score) : '260');
-  const [jeePercentile, setJeePercentile] = useState<string>(jeeInit?.Percentile ? String(jeeInit.Percentile) : '99.12');
-  const [jeeRank, setJeeRank] = useState<string>(jeeInit?.Rank ? String(jeeInit.Rank) : '8420');
+  const [jeeScore, setJeeScore] = useState<string>(jeeInit?.Score ? String(jeeInit.Score) : '');
+  const [jeePercentile, setJeePercentile] = useState<string>(jeeInit?.Percentile ? String(jeeInit.Percentile) : '');
+  const [jeeRank, setJeeRank] = useState<string>(jeeInit?.Rank ? String(jeeInit.Rank) : '');
 
-  const [bitsatScore, setBitsatScore] = useState<string>(bitsatInit?.Score ? String(bitsatInit.Score) : '342');
-  const [bitsatPercentile, setBitsatPercentile] = useState<string>(bitsatInit?.Percentile ? String(bitsatInit.Percentile) : '98.8');
-  const [bitsatRank, setBitsatRank] = useState<string>(bitsatInit?.Rank ? String(bitsatInit.Rank) : '2150');
+  const [bitsatScore, setBitsatScore] = useState<string>(bitsatInit?.Score ? String(bitsatInit.Score) : '');
+  const [bitsatPercentile, setBitsatPercentile] = useState<string>(bitsatInit?.Percentile ? String(bitsatInit.Percentile) : '');
+  const [bitsatRank, setBitsatRank] = useState<string>(bitsatInit?.Rank ? String(bitsatInit.Rank) : '');
 
-  const [gateScore, setGateScore] = useState<string>(gateInit?.Score ? String(gateInit.Score) : '785');
-  const [gatePercentile, setGatePercentile] = useState<string>(gateInit?.Percentile ? String(gateInit.Percentile) : '99.42');
-  const [gateRank, setGateRank] = useState<string>(gateInit?.Rank ? String(gateInit.Rank) : '312');
+  const [gateScore, setGateScore] = useState<string>(gateInit?.Score ? String(gateInit.Score) : '');
+  const [gatePercentile, setGatePercentile] = useState<string>(gateInit?.Percentile ? String(gateInit.Percentile) : '');
+  const [gateRank, setGateRank] = useState<string>(gateInit?.Rank ? String(gateInit.Rank) : '');
+
+  const [catPercentile, setCatPercentile] = useState<string>(catInit?.Percentile ? String(catInit.Percentile) : '');
+  const [catScore, setCatScore] = useState<string>(catInit?.Score ? String(catInit.Score) : '');
+
+  const [gmatScore, setGmatScore] = useState<string>(gmatInit?.Score ? String(gmatInit.Score) : '');
+  const [gmatPercentile, setGmatPercentile] = useState<string>(gmatInit?.Percentile ? String(gmatInit.Percentile) : '');
 
   const [entranceExams, setEntranceExams] = useState<EntranceExamRecord[]>(initialExams);
   const [activities, setActivities] = useState<CandidateActivitiesRecord | undefined>(() => ApiService.getCandidateActivities(candidate?.Candidate_ID || ''));
@@ -411,41 +421,63 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
 
     ApiService.saveFullAcademicProfile(candidate.Candidate_ID, fullProfile);
 
-    // Save National Entrance Exams (JEE, BITSAT & GATE Score)
+    // Save National Entrance Exams (JEE, BITSAT, GATE, CAT, GMAT - ALL OPTIONAL)
     const examsToSave: EntranceExamRecord[] = [];
-    if (jeeScore) {
+    if (jeeScore || jeePercentile || jeeRank) {
       examsToSave.push({
         Exam_Record_ID: jeeInit?.Exam_Record_ID || `ENT_JEE_${Date.now()}`,
         Candidate_ID: candidate.Candidate_ID,
         Examination_Name: 'JEE_MAIN',
         Examination_Year: '2022',
-        Score: Number(jeeScore),
-        Percentile: Number(jeePercentile),
-        Rank: Number(jeeRank),
+        Score: jeeScore ? Number(jeeScore) : undefined,
+        Percentile: jeePercentile ? Number(jeePercentile) : undefined,
+        Rank: jeeRank ? Number(jeeRank) : undefined,
         Created_At: new Date().toISOString()
       });
     }
-    if (bitsatScore) {
+    if (bitsatScore || bitsatPercentile || bitsatRank) {
       examsToSave.push({
         Exam_Record_ID: bitsatInit?.Exam_Record_ID || `ENT_BIT_${Date.now()}`,
         Candidate_ID: candidate.Candidate_ID,
         Examination_Name: 'BITSAT',
         Examination_Year: '2022',
-        Score: Number(bitsatScore),
-        Percentile: Number(bitsatPercentile),
-        Rank: Number(bitsatRank),
+        Score: bitsatScore ? Number(bitsatScore) : undefined,
+        Percentile: bitsatPercentile ? Number(bitsatPercentile) : undefined,
+        Rank: bitsatRank ? Number(bitsatRank) : undefined,
         Created_At: new Date().toISOString()
       });
     }
-    if (gateScore) {
+    if (gateScore || gatePercentile || gateRank) {
       examsToSave.push({
         Exam_Record_ID: gateInit?.Exam_Record_ID || `ENT_GATE_${Date.now()}`,
         Candidate_ID: candidate.Candidate_ID,
         Examination_Name: 'GATE',
         Examination_Year: '2025',
-        Score: Number(gateScore),
-        Percentile: Number(gatePercentile),
-        Rank: Number(gateRank),
+        Score: gateScore ? Number(gateScore) : undefined,
+        Percentile: gatePercentile ? Number(gatePercentile) : undefined,
+        Rank: gateRank ? Number(gateRank) : undefined,
+        Created_At: new Date().toISOString()
+      });
+    }
+    if (catPercentile || catScore) {
+      examsToSave.push({
+        Exam_Record_ID: catInit?.Exam_Record_ID || `ENT_CAT_${Date.now()}`,
+        Candidate_ID: candidate.Candidate_ID,
+        Examination_Name: 'CAT',
+        Examination_Year: '2023',
+        Percentile: catPercentile ? Number(catPercentile) : undefined,
+        Score: catScore ? Number(catScore) : undefined,
+        Created_At: new Date().toISOString()
+      });
+    }
+    if (gmatScore || gmatPercentile) {
+      examsToSave.push({
+        Exam_Record_ID: gmatInit?.Exam_Record_ID || `ENT_GMAT_${Date.now()}`,
+        Candidate_ID: candidate.Candidate_ID,
+        Examination_Name: 'GMAT',
+        Examination_Year: '2023',
+        Score: gmatScore ? Number(gmatScore) : undefined,
+        Percentile: gmatPercentile ? Number(gmatPercentile) : undefined,
         Created_At: new Date().toISOString()
       });
     }
@@ -500,6 +532,7 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
       <PsychometricTestStation
         candidate={candidate}
         assessmentId={selectedAssessmentId}
+        initialSetCode={selectedSetCode}
         onFinish={() => setActiveTab('DASHBOARD')}
       />
     );
@@ -1094,23 +1127,32 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
             </div>
           </div>
 
-          {/* Section 4: National Competitive Entrance Examinations (JEE, BITSAT & GATE Score) */}
+          {/* Section 4: National & Global Competitive Examinations (BITSAT, IIT-JEE, GATE, GMAT, CAT - ALL 100% OPTIONAL) */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-purple-900 bg-purple-50 px-3 py-1 rounded-xl inline-block">
-              4. National Entrance Examinations (JEE, BITSAT & GATE Score)
-            </h3>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-900 bg-purple-50 px-3 py-1 rounded-xl inline-block">
+                4. Competitive Examinations (BITSAT, IIT-JEE, GATE, GMAT, CAT - All Optional)
+              </h3>
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                100% Optional • Leave blank if not appeared
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {/* JEE */}
+              {/* 1. JEE */}
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <span className="font-bold text-xs text-slate-900 block">JEE Main / Advanced</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 block">1. IIT - JEE (Main / Adv)</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Score</label>
                   <input
                     type="number"
                     value={jeeScore}
                     onChange={e => setJeeScore(e.target.value)}
-                    placeholder="e.g. 260"
+                    placeholder="Leave blank if not taken"
                     className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
                   />
                 </div>
@@ -1137,16 +1179,19 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
                 </div>
               </div>
 
-              {/* BITSAT */}
+              {/* 2. BITSAT */}
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <span className="font-bold text-xs text-slate-900 block">BITSAT</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 block">2. BITSAT</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Score</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Score (out of 390)</label>
                   <input
                     type="number"
                     value={bitsatScore}
                     onChange={e => setBitsatScore(e.target.value)}
-                    placeholder="e.g. 342"
+                    placeholder="Leave blank if not taken"
                     className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
                   />
                 </div>
@@ -1173,24 +1218,24 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
                 </div>
               </div>
 
-              {/* GATE SCORE */}
+              {/* 3. GATE SCORE */}
               <div className="p-4 bg-purple-50/70 rounded-2xl border border-purple-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-black text-xs text-purple-950 block">GATE Score</span>
-                  <span className="text-[10px] bg-purple-200/80 text-purple-900 font-extrabold px-2 py-0.5 rounded-md">Graduate Exam</span>
+                  <span className="font-black text-xs text-purple-950 block">3. GATE Score</span>
+                  <span className="text-[10px] bg-purple-200/80 text-purple-900 font-extrabold px-2 py-0.5 rounded-md">(Optional)</span>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-purple-900 mb-1">GATE Score (out of 1000)</label>
+                  <label className="block text-[11px] font-bold text-purple-900 mb-1">Score (out of 1000)</label>
                   <input
                     type="number"
                     value={gateScore}
                     onChange={e => setGateScore(e.target.value)}
-                    placeholder="e.g. 785"
+                    placeholder="Leave blank if not taken"
                     className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-300 font-black text-purple-950 focus:ring-2 focus:ring-purple-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-purple-900 mb-1">GATE Percentile (%)</label>
+                  <label className="block text-[11px] font-bold text-purple-900 mb-1">Percentile (%)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1208,6 +1253,64 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
                     onChange={e => setGateRank(e.target.value)}
                     placeholder="e.g. 312"
                     className="w-full px-3 py-1.5 text-xs rounded-xl border border-purple-300 font-black text-purple-950 focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+              </div>
+
+              {/* 4. CAT (Common Admission Test) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 block">4. CAT (Common Admission Test)</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Percentile (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={catPercentile}
+                    onChange={e => setCatPercentile(e.target.value)}
+                    placeholder="e.g. 98.75"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold text-blue-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Raw / Scaled Score</label>
+                  <input
+                    type="number"
+                    value={catScore}
+                    onChange={e => setCatScore(e.target.value)}
+                    placeholder="Leave blank if not taken"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* 5. GMAT */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs text-slate-900 block">5. GMAT</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Total Score (out of 800)</label>
+                  <input
+                    type="number"
+                    value={gmatScore}
+                    onChange={e => setGmatScore(e.target.value)}
+                    placeholder="e.g. 730"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Percentile (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={gmatPercentile}
+                    onChange={e => setGmatPercentile(e.target.value)}
+                    placeholder="e.g. 96.0"
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 font-bold text-blue-900"
                   />
                 </div>
               </div>
@@ -1667,6 +1770,43 @@ export const UserPortal: React.FC<UserPortalProps> = ({ initialCandidate }) => {
                 <li>Autosave Active: Responses synchronize automatically per question selection.</li>
                 <li>Anti-Cheating Policy: Fullscreen is monitored, right-click/copying is disabled, and tab visibility changes will trigger audit warnings.</li>
               </ul>
+            </div>
+
+            {/* Question Set Selection (Set A, Set B, Set C) */}
+            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-blue-950 uppercase tracking-wide">
+                  Select Question Paper Set
+                </span>
+                <span className="text-[10px] font-black bg-blue-900 text-white px-2.5 py-0.5 rounded-full">
+                  {selectedSetCode === 'SET_A' ? 'Set A (Core)' : selectedSetCode === 'SET_B' ? 'Set B (Advanced)' : 'Set C (Mastery)'} Active
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-normal">
+                3 distinct question paper sets are available. Each set provides 30 dedicated questions with CAT/GMAT/Bank PO standards and 1,500+ word comprehension passages.
+              </p>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {(['SET_A', 'SET_B', 'SET_C'] as QuestionSetCode[]).map(code => {
+                  const isSel = selectedSetCode === code;
+                  const label = code === 'SET_A' ? 'Set A (Core)' : code === 'SET_B' ? 'Set B (Alt)' : 'Set C (Alt)';
+                  const subtext = code === 'SET_A' ? '30 Questions' : code === 'SET_B' ? '30 Questions' : '30 Questions';
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setSelectedSetCode(code)}
+                      className={`p-2.5 rounded-xl text-center border transition-all ${
+                        isSel
+                          ? 'bg-blue-900 text-white border-blue-900 shadow-md ring-2 ring-blue-500/20'
+                          : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="text-xs font-black">{label}</div>
+                      <div className={`text-[10px] ${isSel ? 'text-blue-200 font-medium' : 'text-slate-400'}`}>{subtext}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">

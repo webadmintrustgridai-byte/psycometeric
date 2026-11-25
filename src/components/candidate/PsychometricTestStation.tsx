@@ -9,7 +9,8 @@ import {
   Candidate,
   AssessmentMaster,
   QuestionBankItem,
-  AssessmentAttempt
+  AssessmentAttempt,
+  QuestionSetCode
 } from '../../types';
 import { ApiService } from '../../services/apiService';
 import {
@@ -27,21 +28,24 @@ import {
   Send,
   HelpCircle,
   FileText,
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 
 interface PsychometricTestStationProps {
   candidate: Candidate;
   assessmentId: string;
+  initialSetCode?: QuestionSetCode;
   onFinish: () => void;
 }
 
 export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = ({
   candidate,
   assessmentId,
+  initialSetCode,
   onFinish
 }) => {
-  // Load Assessment Master and Questions
+  // Load Assessment Master
   const assessmentMaster = ApiService.getAssessmentMaster().find(a => a.Assessment_ID === assessmentId) || {
     Assessment_ID: assessmentId,
     Assessment_Name: 'Standard Assessment',
@@ -55,16 +59,18 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
     Created_By: 'ADM_001'
   };
 
-  const questions: QuestionBankItem[] = ApiService.getQuestionBank(assessmentId);
-
   // Server-Authoritative Attempt Record
   const [attempt, setAttempt] = useState<AssessmentAttempt>(() => {
     return ApiService.startAssessmentAttempt(
       candidate.Candidate_ID,
       assessmentId,
-      assessmentMaster.Duration_Minutes
+      assessmentMaster.Duration_Minutes,
+      initialSetCode || 'SET_A'
     );
   });
+
+  const activeSet = attempt.Set_Code || initialSetCode || 'SET_A';
+  const questions: QuestionBankItem[] = ApiService.getQuestionBank(assessmentId, activeSet);
 
   // Test State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -96,6 +102,59 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
   });
 
   const currentQuestion = questions[currentIndex] || questions[0];
+
+  // Distinct Color Schemes & Metadata for the 3 Passages in Comprehension
+  const isComprehension = Boolean(currentQuestion?.Passage_Text || assessmentMaster.Assessment_Type === 'COMPREHENSION');
+  const passageIndex = currentIndex < 10 ? 1 : currentIndex < 20 ? 2 : 3;
+
+  const passageThemes = {
+    1: {
+      number: 1,
+      name: 'Passage 1 (Blue Theme)',
+      range: 'Q1 – Q10',
+      label: 'Passage 1',
+      themeName: 'Blue Theme',
+      badge: 'bg-blue-600 text-white shadow-sm',
+      cardBorder: 'border-blue-400 ring-2 ring-blue-500/20 shadow-blue-50/50',
+      tagBadge: 'bg-blue-50 text-blue-900 border border-blue-300',
+      activeTab: 'bg-blue-600 text-white shadow-sm',
+      inactiveTab: 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200',
+      boxContainer: 'border-2 border-blue-300 bg-blue-50/40',
+      buttonBg: 'bg-white text-blue-950 border border-blue-200 hover:bg-blue-100',
+      ringColor: 'ring-blue-600'
+    },
+    2: {
+      number: 2,
+      name: 'Passage 2 (Green Theme)',
+      range: 'Q11 – Q20',
+      label: 'Passage 2',
+      themeName: 'Green Theme',
+      badge: 'bg-emerald-600 text-white shadow-sm',
+      cardBorder: 'border-emerald-400 ring-2 ring-emerald-500/20 shadow-emerald-50/50',
+      tagBadge: 'bg-emerald-50 text-emerald-900 border border-emerald-300',
+      activeTab: 'bg-emerald-600 text-white shadow-sm',
+      inactiveTab: 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200',
+      boxContainer: 'border-2 border-emerald-300 bg-emerald-50/40',
+      buttonBg: 'bg-white text-emerald-950 border border-emerald-200 hover:bg-emerald-100',
+      ringColor: 'ring-emerald-600'
+    },
+    3: {
+      number: 3,
+      name: 'Passage 3 (Purple Theme)',
+      range: 'Q21 – Q30',
+      label: 'Passage 3',
+      themeName: 'Purple Theme',
+      badge: 'bg-purple-600 text-white shadow-sm',
+      cardBorder: 'border-purple-400 ring-2 ring-purple-500/20 shadow-purple-50/50',
+      tagBadge: 'bg-purple-50 text-purple-900 border border-purple-300',
+      activeTab: 'bg-purple-600 text-white shadow-sm',
+      inactiveTab: 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200',
+      boxContainer: 'border-2 border-purple-300 bg-purple-50/40',
+      buttonBg: 'bg-white text-purple-950 border border-purple-200 hover:bg-purple-100',
+      ringColor: 'ring-purple-600'
+    }
+  };
+  const currentTheme = passageThemes[passageIndex as 1 | 2 | 3] || passageThemes[1];
 
   // ==========================================
   // SERVER COUNTDOWN TIMER & AUTO-SUBMIT
@@ -320,7 +379,17 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
             {currentIndex + 1}
           </div>
           <div>
-            <h2 className="text-sm font-black text-slate-900">{assessmentMaster.Assessment_Name}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black text-slate-900">{assessmentMaster.Assessment_Name}</h2>
+              <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-900 border border-blue-200">
+                Paper: {activeSet === 'SET_A' ? 'Set A' : activeSet === 'SET_B' ? 'Set B' : 'Set C'}
+              </span>
+              {isComprehension && (
+                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${currentTheme.badge}`}>
+                  {currentTheme.name}
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-slate-500">
               {candidate.Full_Name} • Roll: <span className="font-mono font-semibold">{candidate.College_ID_Number}</span>
             </p>
@@ -363,18 +432,62 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
         
         {/* COMPREHENSION PASSAGE PANE (WHEN PASSAGE IS PRESENT - CAT / GMAT / BANK PO SPLIT VIEW) */}
         {currentQuestion?.Passage_Text && (
-          <div className="lg:col-span-6 flex flex-col bg-white p-6 rounded-3xl border border-slate-200 shadow-sm max-h-[720px]">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+          <div className={`lg:col-span-6 flex flex-col bg-white p-6 rounded-3xl border-2 transition-all shadow-sm max-h-[720px] ${currentTheme.cardBorder}`}>
+            
+            {/* Quick Switcher Tabs between the 3 Passages */}
+            <div className="grid grid-cols-3 gap-2 pb-3 mb-3 border-b border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCurrentIndex(0)}
+                className={`py-1.5 px-2 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                  passageIndex === 1
+                    ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20'
+                    : 'bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100'
+                }`}
+              >
+                <span>📘</span>
+                <span>Passage 1 (Q1–10)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentIndex(10)}
+                className={`py-1.5 px-2 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                  passageIndex === 2
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                    : 'bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100'
+                }`}
+              >
+                <span>📗</span>
+                <span>Passage 2 (Q11–20)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentIndex(20)}
+                className={`py-1.5 px-2 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                  passageIndex === 3
+                    ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-500/20'
+                    : 'bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100'
+                }`}
+              >
+                <span>📙</span>
+                <span>Passage 3 (Q21–30)</span>
+              </button>
+            </div>
+
+            {/* Header with Title & Font Controls */}
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-blue-900" />
-                <span className="text-xs font-black text-blue-900 uppercase tracking-wider">
-                  Reading Passage (1,500 – 3,000 Words)
+                <span className={`text-[11px] font-black uppercase px-2.5 py-1 rounded-lg ${currentTheme.badge}`}>
+                  {currentTheme.name}
+                </span>
+                <span className="text-[11px] font-bold text-slate-500 hidden sm:inline">
+                  (1,500 – 3,000 Words • CAT/GMAT)
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold bg-purple-50 text-purple-900 px-2 py-0.5 rounded-full hidden sm:inline">
-                  CAT / GMAT Standard
-                </span>
+                <span className="text-[10px] font-bold text-slate-400">Zoom:</span>
                 <div className="flex items-center bg-slate-100 rounded-lg p-0.5">
                   <button
                     type="button"
@@ -430,9 +543,16 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
           {/* QUESTION CARD */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Question {currentIndex + 1} of {questions.length} • {currentQuestion?.Section_Name}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {currentQuestion?.Passage_Text && (
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${currentTheme.badge}`}>
+                    Passage {passageIndex} ({currentTheme.range})
+                  </span>
+                )}
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Question {currentIndex + 1} of {questions.length} • {currentQuestion?.Section_Name}
+                </span>
+              </div>
               <button
                 onClick={handleToggleMarkReview}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all ${
@@ -525,42 +645,148 @@ export const PsychometricTestStation: React.FC<PsychometricTestStationProps> = (
             </div>
           </div>
 
-          {/* COMPACT QUESTION PALETTE UNDERNEATH WHEN IN COMPREHENSION SPLIT VIEW */}
+          {/* COLOR-DIFFERENTIATED ACCESSIBLE QUESTION PALETTE (FOR COMPREHENSION: 3 PASSAGE CLUSTERS) */}
           {currentQuestion?.Passage_Text && (
-            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-700">Question Palette (1 – 30)</h4>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-semibold">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Ans ({answeredCount})</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Rev ({reviewCount})</span>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">
+                    Question Palette • 3 Passage Clusters (30 Questions)
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Click any question number to instantly navigate. Color themes distinguish each 1,500+ word passage.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-slate-600 font-bold">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Answered ({answeredCount})</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> Review ({reviewCount})</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-200" /> Unanswered ({unansweredCount})</span>
                 </div>
               </div>
-              <div className="grid grid-cols-10 gap-1.5">
-                {questions.map((q, idx) => {
-                  const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
-                  const isMarked = Boolean(markedForReview[q.Question_ID]);
-                  const isCurr = idx === currentIndex;
 
-                  let btnBg = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
-                  if (isMarked) {
-                    btnBg = 'bg-purple-600 text-white';
-                  } else if (isAns) {
-                    btnBg = 'bg-emerald-600 text-white';
-                  }
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Passage 1 Cluster: Q1 - Q10 (Blue Theme) */}
+                <div className="p-3 rounded-2xl border-2 border-blue-300 bg-blue-50/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-600 text-white">
+                      Passage 1 (Q1 – 10)
+                    </span>
+                    <span className="text-[10px] font-bold text-blue-900">
+                      {questions.slice(0, 10).filter(q => responses[q.Question_ID]?.selectedAnswer).length}/10 Done
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {questions.slice(0, 10).map((q, i) => {
+                      const idx = i;
+                      const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
+                      const isMarked = Boolean(markedForReview[q.Question_ID]);
+                      const isCurr = idx === currentIndex;
 
-                  return (
-                    <button
-                      key={q.Question_ID}
-                      type="button"
-                      onClick={() => setCurrentIndex(idx)}
-                      className={`h-7 rounded-lg text-[11px] font-bold transition-all ${btnBg} ${
-                        isCurr ? 'ring-2 ring-blue-900 ring-offset-1 scale-105' : ''
-                      }`}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
-                })}
+                      let btnStyle = 'bg-white text-blue-950 border border-blue-200 hover:bg-blue-100';
+                      if (isMarked) {
+                        btnStyle = 'bg-purple-600 text-white font-extrabold shadow-sm';
+                      } else if (isAns) {
+                        btnStyle = 'bg-blue-600 text-white font-extrabold shadow-sm';
+                      }
+
+                      return (
+                        <button
+                          key={q.Question_ID}
+                          type="button"
+                          onClick={() => setCurrentIndex(idx)}
+                          className={`h-7 rounded-lg text-xs font-bold transition-all ${btnStyle} ${
+                            isCurr ? 'ring-2 ring-blue-900 ring-offset-1 scale-105 font-black shadow-md' : ''
+                          }`}
+                          title={`Passage 1: Question ${idx + 1}`}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Passage 2 Cluster: Q11 - Q20 (Green / Emerald Theme) */}
+                <div className="p-3 rounded-2xl border-2 border-emerald-300 bg-emerald-50/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-emerald-600 text-white">
+                      Passage 2 (Q11 – 20)
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-900">
+                      {questions.slice(10, 20).filter(q => responses[q.Question_ID]?.selectedAnswer).length}/10 Done
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {questions.slice(10, 20).map((q, i) => {
+                      const idx = i + 10;
+                      const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
+                      const isMarked = Boolean(markedForReview[q.Question_ID]);
+                      const isCurr = idx === currentIndex;
+
+                      let btnStyle = 'bg-white text-emerald-950 border border-emerald-200 hover:bg-emerald-100';
+                      if (isMarked) {
+                        btnStyle = 'bg-purple-600 text-white font-extrabold shadow-sm';
+                      } else if (isAns) {
+                        btnStyle = 'bg-emerald-600 text-white font-extrabold shadow-sm';
+                      }
+
+                      return (
+                        <button
+                          key={q.Question_ID}
+                          type="button"
+                          onClick={() => setCurrentIndex(idx)}
+                          className={`h-7 rounded-lg text-xs font-bold transition-all ${btnStyle} ${
+                            isCurr ? 'ring-2 ring-emerald-900 ring-offset-1 scale-105 font-black shadow-md' : ''
+                          }`}
+                          title={`Passage 2: Question ${idx + 1}`}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Passage 3 Cluster: Q21 - Q30 (Purple Theme) */}
+                <div className="p-3 rounded-2xl border-2 border-purple-300 bg-purple-50/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-purple-600 text-white">
+                      Passage 3 (Q21 – 30)
+                    </span>
+                    <span className="text-[10px] font-bold text-purple-900">
+                      {questions.slice(20, 30).filter(q => responses[q.Question_ID]?.selectedAnswer).length}/10 Done
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {questions.slice(20, 30).map((q, i) => {
+                      const idx = i + 20;
+                      const isAns = Boolean(responses[q.Question_ID]?.selectedAnswer);
+                      const isMarked = Boolean(markedForReview[q.Question_ID]);
+                      const isCurr = idx === currentIndex;
+
+                      let btnStyle = 'bg-white text-purple-950 border border-purple-200 hover:bg-purple-100';
+                      if (isMarked) {
+                        btnStyle = 'bg-purple-600 text-white font-extrabold shadow-sm';
+                      } else if (isAns) {
+                        btnStyle = 'bg-purple-600 text-white font-extrabold shadow-sm';
+                      }
+
+                      return (
+                        <button
+                          key={q.Question_ID}
+                          type="button"
+                          onClick={() => setCurrentIndex(idx)}
+                          className={`h-7 rounded-lg text-xs font-bold transition-all ${btnStyle} ${
+                            isCurr ? 'ring-2 ring-purple-900 ring-offset-1 scale-105 font-black shadow-md' : ''
+                          }`}
+                          title={`Passage 3: Question ${idx + 1}`}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -26,7 +26,8 @@ import {
   CandidateVideoProfile,
   AdminUser,
   SystemConfiguration,
-  SystemAuditLog
+  SystemAuditLog,
+  QuestionSetCode
 } from '../types';
 import {
   INITIAL_CANDIDATES,
@@ -438,7 +439,7 @@ export const ApiService = {
     total12th?: number;
     percentage12th?: number;
     passingYear12th?: string;
-    // Entrance Exams (JEE, BITSAT, GATE)
+    // Entrance Exams (JEE, BITSAT, GATE, CAT, GMAT - ALL OPTIONAL)
     gateScore?: number;
     gatePercentile?: number;
     gateRank?: number;
@@ -448,6 +449,12 @@ export const ApiService = {
     jeeYear?: string;
     bitsatScore?: number;
     bitsatYear?: string;
+    catPercentile?: number;
+    catScore?: number;
+    catYear?: string;
+    gmatScore?: number;
+    gmatPercentile?: number;
+    gmatYear?: string;
   }): { success: boolean; session?: AuthSession; candidate?: Candidate; message?: string } {
     const cleanEmail = data.email.trim().toLowerCase();
     const existing = this.getCandidates().find(c => 
@@ -537,7 +544,7 @@ export const ApiService = {
       }
     });
 
-    // 3. Save Entrance Exams (GATE, JEE, BITSAT)
+    // 3. Save Entrance Exams (GATE, JEE, BITSAT, CAT, GMAT - All Optional)
     const entranceExams: EntranceExamRecord[] = [];
     if (data.gateScore || data.gatePercentile || data.gateRank) {
       entranceExams.push({
@@ -567,6 +574,26 @@ export const ApiService = {
         Examination_Name: 'BITSAT',
         Examination_Year: data.bitsatYear || '2022',
         Score: Number(data.bitsatScore) || undefined
+      });
+    }
+    if (data.catPercentile || data.catScore) {
+      entranceExams.push({
+        Exam_Record_ID: `ENT_CAT_${newCand.Candidate_ID}`,
+        Candidate_ID: newCand.Candidate_ID,
+        Examination_Name: 'CAT',
+        Examination_Year: data.catYear || '2023',
+        Percentile: Number(data.catPercentile) || undefined,
+        Score: Number(data.catScore) || undefined
+      });
+    }
+    if (data.gmatScore || data.gmatPercentile) {
+      entranceExams.push({
+        Exam_Record_ID: `ENT_GMAT_${newCand.Candidate_ID}`,
+        Candidate_ID: newCand.Candidate_ID,
+        Examination_Name: 'GMAT',
+        Examination_Year: data.gmatYear || '2023',
+        Score: Number(data.gmatScore) || undefined,
+        Percentile: Number(data.gmatPercentile) || undefined
       });
     }
     if (entranceExams.length > 0) {
@@ -837,10 +864,18 @@ export const ApiService = {
     return state[assessmentId] === true;
   },
 
-  getQuestionBank(assessmentId?: string): QuestionBankItem[] {
+  getQuestionBank(assessmentId?: string, setCode?: QuestionSetCode): QuestionBankItem[] {
     const all = loadStorage<QuestionBankItem[]>(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTION_BANK);
-    if (!assessmentId || assessmentId === 'ALL') return all;
-    return all.filter(q => q.Assessment_ID === assessmentId);
+    if (!assessmentId || assessmentId === 'ALL') {
+      if (setCode) return all.filter(q => (q.Set_Code || 'SET_A') === setCode);
+      return all;
+    }
+    return all.filter(q => {
+      const matchAsm = q.Assessment_ID === assessmentId;
+      if (!matchAsm) return false;
+      if (!setCode) return true;
+      return (q.Set_Code || 'SET_A') === setCode;
+    });
   },
 
   createQuestion(question: QuestionBankItem): QuestionBankItem {
@@ -1156,7 +1191,12 @@ export const ApiService = {
   /**
    * Server-authoritative start attempt
    */
-  startAssessmentAttempt(candidateId: string, assessmentId: string, durationMinutes: number = 30): AssessmentAttempt {
+  startAssessmentAttempt(
+    candidateId: string,
+    assessmentId: string,
+    durationMinutes: number = 30,
+    setCode?: QuestionSetCode
+  ): AssessmentAttempt {
     // 1. Verify administrator has enabled/started this assessment
     if (!this.isAssessmentLive(assessmentId)) {
       throw new Error('This assessment has not been started by the administrator yet. Access is unlocked once enabled by admin.');
@@ -1184,6 +1224,7 @@ export const ApiService = {
         Assignment_ID: `ASN_${Date.now()}_${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
         Candidate_ID: candidateId,
         Assessment_ID: assessmentId,
+        Set_Code: setCode || 'SET_A',
         Scheduled_Date: new Date().toISOString().split('T')[0],
         Scheduled_Start_Time: '10:00',
         Duration_Minutes: durationMinutes,
@@ -1204,6 +1245,7 @@ export const ApiService = {
       Attempt_ID: attemptId,
       Candidate_ID: candidateId,
       Assessment_ID: assessmentId,
+      Set_Code: setCode || assign.Set_Code || 'SET_A',
       Start_Timestamp: now.toISOString(),
       End_Timestamp_Deadline: deadline.toISOString(),
       Duration_Seconds: durationMinutes * 60,
