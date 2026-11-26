@@ -142,7 +142,7 @@ export const ApiService = {
     try {
       await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         mode: 'no-cors',
         body: JSON.stringify({ action, ...payload })
       });
@@ -162,6 +162,41 @@ export const ApiService = {
       return { success: false, message: data.error || 'Server responded with an error.' };
     } catch (err: any) {
       return { success: false, message: 'Network request failed: ' + (err.message || 'Check deployment URL.') };
+    }
+  },
+
+  async pullAllFromGas(): Promise<{ success: boolean; count: number }> {
+    const targetUrl = GOOGLE_APPS_SCRIPT_URL || this.getGasConfig().webAppUrl;
+    if (!targetUrl || typeof window === 'undefined') return { success: false, count: 0 };
+
+    try {
+      const sep = targetUrl.includes('?') ? '&' : '?';
+      const resp = await fetch(`${targetUrl}${sep}action=getCandidates`);
+      if (!resp.ok) return { success: false, count: 0 };
+      const json = await resp.json();
+      if (json && json.success && Array.isArray(json.data)) {
+        const local = loadStorage<Candidate[]>(STORAGE_KEYS.CANDIDATES, []);
+        const map = new Map<string, Candidate>();
+        local.forEach(c => {
+          if (c.Candidate_ID) map.set(c.Candidate_ID, c);
+        });
+        json.data.forEach((remote: any) => {
+          if (remote.Candidate_ID) {
+            map.set(remote.Candidate_ID, {
+              ...map.get(remote.Candidate_ID),
+              ...remote
+            });
+          }
+        });
+        const merged = Array.from(map.values());
+        saveStorage(STORAGE_KEYS.CANDIDATES, merged);
+        console.log(`[GAS Pull] Synced ${json.data.length} candidates from Google Sheets`);
+        return { success: true, count: json.data.length };
+      }
+      return { success: false, count: 0 };
+    } catch (err) {
+      console.warn('[GAS Pull] Failed to pull candidates:', err);
+      return { success: false, count: 0 };
     }
   },
 
@@ -215,7 +250,7 @@ export const ApiService = {
     }
   },
 
-  login(email: string, role: Role, password?: string): { success: boolean; session?: AuthSession; message?: string } {
+  async login(email: string, role: Role, password?: string): Promise<{ success: boolean; session?: AuthSession; message?: string }> {
     const cleanEmail = email.trim().toLowerCase();
 
     if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
@@ -251,14 +286,29 @@ export const ApiService = {
       return { success: true, session };
     } else {
       // Candidate Login (Lookup candidates registered via Sign Up or created by Administrator)
-      const candidates = this.getCandidates();
-      const matched = candidates.find(c => 
+      let candidates = this.getCandidates();
+      let matched = candidates.find(c => 
         (c.Primary_Email && c.Primary_Email.toLowerCase() === cleanEmail) || 
         (c.Email && c.Email.toLowerCase() === cleanEmail) ||
         (c.Candidate_ID && c.Candidate_ID.toLowerCase() === cleanEmail) ||
         (c.College_ID_Number && c.College_ID_Number.toLowerCase() === cleanEmail) ||
         (c.Full_Name && c.Full_Name.toLowerCase() === cleanEmail)
       );
+
+      // If candidate is not found in local browser storage, pull directly from Google Sheets
+      if (!matched) {
+        try {
+          await this.pullAllFromGas();
+          candidates = this.getCandidates();
+          matched = candidates.find(c => 
+            (c.Primary_Email && c.Primary_Email.toLowerCase() === cleanEmail) || 
+            (c.Email && c.Email.toLowerCase() === cleanEmail) ||
+            (c.Candidate_ID && c.Candidate_ID.toLowerCase() === cleanEmail) ||
+            (c.College_ID_Number && c.College_ID_Number.toLowerCase() === cleanEmail) ||
+            (c.Full_Name && c.Full_Name.toLowerCase() === cleanEmail)
+          );
+        } catch (_) {}
+      }
 
       if (!matched) {
         return {
@@ -677,6 +727,10 @@ export const ApiService = {
   getAcademicProfiles(candidateId: string): AcademicProfileRecord[] {
     const all = loadStorage<AcademicProfileRecord[]>(STORAGE_KEYS.ACADEMIC_PROFILES, INITIAL_ACADEMIC_PROFILES);
     return all.filter(a => a.Candidate_ID === candidateId);
+  },
+
+  saveAcademicProfiles(candidateId: string, profile: CandidateFullAcademicProfile): void {
+    return this.saveFullAcademicProfile(candidateId, profile);
   },
 
   saveFullAcademicProfile(candidateId: string, profile: CandidateFullAcademicProfile): void {

@@ -73,6 +73,9 @@ export const App: React.FC = () => {
       setPortalMode('ADMIN');
     }
 
+    // Background sync candidate database from Google Sheets
+    ApiService.pullAllFromGas().catch(() => {});
+
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
       window.removeEventListener('hashchange', handleUrlChange);

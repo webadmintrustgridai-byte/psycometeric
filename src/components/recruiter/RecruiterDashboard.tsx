@@ -3,7 +3,7 @@
  * RecruiterDashboard.tsx - Candidate Management, Lab Scheduling & 10 Metric Analytics
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Candidate,
   AssessmentMaster,
@@ -33,7 +33,8 @@ import {
   GraduationCap,
   PlayCircle,
   Sliders,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 
 interface RecruiterDashboardProps {
@@ -213,6 +214,24 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
     link.click();
     document.body.removeChild(link);
   };
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncFromGas = async () => {
+    setIsSyncing(true);
+    try {
+      await ApiService.pullAllFromGas();
+      setCandidates(ApiService.getCandidates());
+      setAssignments(ApiService.getAssignments());
+      setAttempts(ApiService.getAttempts());
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    handleSyncFromGas();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -400,6 +419,16 @@ export const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Clear Candidate Records</span>
+            </button>
+
+            <button
+              onClick={handleSyncFromGas}
+              disabled={isSyncing}
+              className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors border border-emerald-200"
+              title="Pull latest candidate registrations and test attempts from Google Sheets"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync Google Sheets'}</span>
             </button>
 
             <button

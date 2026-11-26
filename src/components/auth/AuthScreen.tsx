@@ -132,14 +132,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   };
 
   // Handle Master Admin Login (Only on /admin)
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
     setLoading(true);
 
     try {
-      const res = ApiService.login(adminEmail, 'ADMIN', adminPassword);
+      const res = await ApiService.login(adminEmail, 'ADMIN', adminPassword);
       if (res.success && res.session) {
         onLoginSuccess(res.session);
       } else {
@@ -153,7 +153,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   };
 
   // Handle Candidate Sign In
-  const handleCandidateSignIn = (e: React.FormEvent) => {
+  const handleCandidateSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!candEmail.trim()) {
       setErrorMsg('Please enter your registered email address or roll number.');
@@ -165,7 +165,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const res = ApiService.login(candEmail.trim(), 'CANDIDATE', candPassword);
+      const res = await ApiService.login(candEmail.trim(), 'CANDIDATE', candPassword);
       if (res.success && res.session) {
         onLoginSuccess(res.session);
       } else {
